@@ -1,6 +1,8 @@
 import math
 
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .utils import D_TYPE
 
@@ -31,3 +33,44 @@ def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
     plt.tight_layout()
     plt.savefig(id)
     plt.close()
+
+
+class VideoMaker:
+    def __init__(s, path, cols=3, fps=30, gap=10):
+        s.path, s.cols, s.fps, s.gap = path, cols, fps, gap
+        s.writer = None
+
+    def to_uint8(s, x: np.ndarray):
+        min, max = x.min(), x.max()
+        norm = (x - min) / (max - min + 1e-5)
+        return (norm * 255).astype(np.uint8)
+
+    def _stich_plots(s, plots: D_TYPE):
+        imgs = []
+        for k, v in plots.items():
+            img = s.to_uint8(np.array(v))
+            cv2.putText(
+                img, k, (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,), 1, cv2.LINE_AA
+            )
+            img = cv2.copyMakeBorder(
+                img, 0, s.gap, 0, s.gap, cv2.BORDER_CONSTANT, value=50
+            )
+            imgs.append(img)
+        n = len(imgs)
+        R = np.ceil(n / s.cols)
+        h, w = img.shape
+        while len(imgs) < (R * s.cols):
+            imgs.append(np.full((h, w), 50, dtype=np.uint8))
+        rows = [np.hstack(imgs[i : i + s.cols]) for i in range(0, len(imgs), s.cols)]
+        return np.vstack(rows)
+
+    def add(s, plots: D_TYPE):
+        frame = s._stich_plots(plots)
+        if s.writer is None:
+            h, w = frame.shape
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            s.writer = cv2.VideoWriter(s.path, fourcc, s.fps, (w, h), isColor=False)
+        s.writer.write(frame)
+
+    def release(s):
+        s.writer.release()

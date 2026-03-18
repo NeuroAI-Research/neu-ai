@@ -1,12 +1,11 @@
-import cv2
 import jax.numpy as jnp
 from jax import lax, random
 from jax.nn import relu, sigmoid
 from jax.random import PRNGKey
 
 from theoretical_neuroscience.m1_neural_encoding import poisson_spikes
-from theoretical_neuroscience.plot import plot1
-from theoretical_neuroscience.utils import postfix
+from theoretical_neuroscience.plot import VideoMaker, plot1
+from theoretical_neuroscience.utils import frame_to_jax, read_video
 
 
 def predict_firing_rate(stimulus, kernel, r0, act="relu"):
@@ -44,10 +43,6 @@ def demo_predict_firing_rate():
 # =================================
 
 
-def frame_to_jax(frame, c=cv2.COLOR_BGR2GRAY):
-    return jnp.array(cv2.cvtColor(frame, c), dtype=jnp.float32)
-
-
 def conv_2d(stimulus: jnp.ndarray, kernel_2d: jnp.ndarray):
     s = stimulus[None, None, :, :]
     k = kernel_2d[None, None, :, :]
@@ -55,7 +50,7 @@ def conv_2d(stimulus: jnp.ndarray, kernel_2d: jnp.ndarray):
     return s2.squeeze()
 
 
-def retinal_step(state, frame, kernel_2d, debug=True, r0=5):
+def retinal_step(state, frame, kernel_2d, r0=0):
     key = state
 
     # 1. photoreceptor: normalize the current frame relative to its own mean
@@ -73,34 +68,30 @@ def retinal_step(state, frame, kernel_2d, debug=True, r0=5):
     this_key, next_key = random.split(key)
     spikes = random.poisson(this_key, firing_rate)
 
-    if debug:
-        plots = {
-            "frame": frame,
-            "kernel_2d": kernel_2d,
-            "stimulus": s,
-            "graded_potential": graded_potential,
-            "firing_rate": firing_rate,
-            "spikes": spikes,
-        }
-        plot1(postfix(plots, ".img"), "4_retinal_step")
-    return next_key, firing_rate, spikes
+    data = {
+        "frame": frame,
+        # "kernel_2d": kernel_2d,
+        "stimulus": s,
+        "graded_potential": graded_potential,
+        "firing_rate": firing_rate,
+        "spikes": spikes,
+    }
+    return next_key, data
 
 
-def test_vision():
+def demo_retinal_step():
     path = "./data/eye.mp4"
-    vid = cv2.VideoCapture(path)
     key = PRNGKey(42)
     kernel_2d = jnp.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]], dtype=jnp.float32)
+    vm = VideoMaker("4_demo_retinal_step.mp4")
 
-    while vid.isOpened():
-        ret, frame = vid.read()
-        if not ret:
-            break
+    for frame in read_video(path):
         frame = frame_to_jax(frame)
-        retinal_step(key, frame, kernel_2d)
-        return
-    vid.release()
+        key, data = retinal_step(key, frame, kernel_2d)
+        # plot1(postfix(data, ".img"), "4_demo_retinal_step")
+        vm.add(data)
+    vm.release()
 
 
 if __name__ == "__main__":
-    test_vision()
+    demo_retinal_step()

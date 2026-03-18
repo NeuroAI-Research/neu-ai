@@ -33,4 +33,4 @@ theoretical-neuroscience = { path = ".", editable = true }
 build = "rm -rf dist/ && python -m build"
 publish = "python -m twine upload dist/*"
 test = "pytest tests/"
-clean = "isort . --skip .pixi && black . --exclude .pixi && flake8 . --exclude .pixi"
+clean = "isort . --skip .pixi && black . --exclude .pixi && flake8 . --exclude .pixi --ignore=E501,E203"

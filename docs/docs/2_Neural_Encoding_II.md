@@ -16,3 +16,16 @@ $$ r_{est}(t) = r_0 + F\left( \int_{0}^{\infty} D(\tau) s(t - \tau) d\tau \right
 
 
 
+
+
+
+## 2.3 Introduction to the Early Visual System
+
+- The Retina
+    - **Phototransduction:** Rod and cone receptors convert light into electrical signals via hyperpolarization
+    - **Graded Potentials:** Horizontal, bipolar, and amacrine cells use smoothly changing membrane potentials to represent light intensity 
+    - **Retinal Ganglion Cells (RGCs):** These are the output neurons of the retina. They convert graded signals into **action potentials** for long-distance transmission via the optic nerve
+        - **ON cells:** Fire when light is turned on
+        - **OFF cells:** Fire when light is turned off
+
+- Visual Processing Stream: The signal travels from the **retina** $\rightarrow$ **optic chiasm** (where some axons cross to represent opposite visual fields) $\rightarrow$ **Lateral Geniculate Nucleus (LGN)** of the thalamus $\rightarrow$ **Primary Visual Cortex (V1)**
