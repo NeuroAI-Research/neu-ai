@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-from jax import lax, random
+from jax import lax, random, vmap
 from jax.nn import relu, sigmoid
 from jax.random import PRNGKey
 
@@ -93,5 +93,91 @@ def demo_retinal_step():
     vm.release()
 
 
+# ==========================
+
+
+def gabor_kernel_2d(theta, size=21, sigma=3, k=0.5, phi=0):
+    x = jnp.linspace(-size // 2, size // 2, size)
+    y, x = jnp.meshgrid(x, x)
+    sin, cos = jnp.sin(theta), jnp.cos(theta)
+    # rotate coordinates for orientation selectivity
+    xr = x * cos + y * sin
+    yr = -x * sin + y * cos
+    envelope = jnp.exp(-(xr**2 + yr**2) / (2 * sigma**2))
+    ker = envelope * jnp.cos(k * xr - phi)
+    return ker / jnp.sum(jnp.abs(ker))
+
+
+def temporal_kernel(T=50, dt=0.01, alpha=1 / 0.015):
+    tau = jnp.arange(T) * dt
+    at = alpha * tau
+    A, B = (at**5) / 120, (at**7) / 5040
+    return alpha * jnp.exp(-at) * (A - B)
+
+
+def v1_layer_step(key, prev_data, retina_out, kernel_2d, r_fast=0.6, r_slow=0.9):
+    spatial_res = conv_2d(retina_out, kernel_2d)
+    L_fast = r_fast * prev_data["L_fast"] + (1 - r_fast) * spatial_res
+    L_slow = r_slow * prev_data["L_slow"] + (1 - r_slow) * spatial_res
+    L = L_fast - L_slow
+    r = relu(L) ** 2
+    this_key, next_key = random.split(key)
+    spikes = random.poisson(this_key, r)
+    data = {
+        "retina_out": retina_out,
+        # "spatial_res": spatial_res,
+        "L_fast": L_fast,
+        "L_slow": L_slow,
+        # "L": L,
+        "firing_rate": r,
+        "spikes": spikes,
+    }
+    return next_key, data
+
+
+def v1_layer_batch(retina_out, kernel_2d, kernel_time):
+    spatial_res = vmap(conv_2d, in_axes=(0, None))(retina_out, kernel_2d)
+
+    def conv_time(pixel_hist):
+        return jnp.convolve(pixel_hist, kernel_time, mode="same")
+
+    conv_time = vmap(vmap(conv_time, 1), 1)
+    L = conv_time(spatial_res).transpose(2, 0, 1)
+    r = relu(L) ** 2
+    return r
+
+
+def demo_v1_step():
+    retina_kernel_2d = jnp.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]], jnp.float32)
+    kernel_2d = gabor_kernel_2d(theta=jnp.pi / 4)  # 45-degree detector
+    vm = VideoMaker("5_demo_v1_step.mp4")
+    size = (224, 224)
+
+    key = PRNGKey(42)
+    d2 = {"L_fast": jnp.zeros(size), "L_slow": jnp.zeros(size)}
+
+    for frame in read_video("./data/cat_dance.mp4"):
+        frame = frame_to_jax(frame, size)
+        key, d1 = retinal_step(key, frame, retina_kernel_2d)
+        key, d2 = v1_layer_step(key, d2, frame, kernel_2d)
+        vm.add(d2)
+    vm.release()
+
+
+def demo_v1_batch():
+    size = (224, 224)
+    frames = []
+    for frame in read_video("./data/cat_dance.mp4"):
+        frames.append(frame_to_jax(frame, size))
+    frames = jnp.array(frames)
+    kernel_2d = gabor_kernel_2d(theta=jnp.pi / 4)  # 45-degree detector
+    kernel_time = temporal_kernel()
+    firing_rate = v1_layer_batch(frames, kernel_2d, kernel_time)
+    vm = VideoMaker("5_demo_v1_batch.mp4")
+    for s, r in zip(frames, firing_rate):
+        vm.add({"stimulus": s, "firing_rate": r})
+    vm.release()
+
+
 if __name__ == "__main__":
-    demo_retinal_step()
+    demo_v1_batch()

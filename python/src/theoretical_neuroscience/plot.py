@@ -57,11 +57,12 @@ class VideoMaker:
             )
             imgs.append(img)
         n = len(imgs)
-        R = np.ceil(n / s.cols)
+        C = min(n, s.cols)
+        R = np.ceil(n / C)
         h, w = img.shape
-        while len(imgs) < (R * s.cols):
+        while len(imgs) < (R * C):
             imgs.append(np.full((h, w), 50, dtype=np.uint8))
-        rows = [np.hstack(imgs[i : i + s.cols]) for i in range(0, len(imgs), s.cols)]
+        rows = [np.hstack(imgs[i : i + C]) for i in range(0, len(imgs), C)]
         return np.vstack(rows)
 
     def add(s, plots: D_TYPE):
