@@ -37,3 +37,7 @@ def shape(x):
         return x.shape
     except Exception:
         return ""
+
+
+def gaussian(x, mu, sig):
+    return jnp.exp(-((x - mu) ** 2) / (2 * sig**2))

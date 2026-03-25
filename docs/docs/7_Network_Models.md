@@ -70,3 +70,52 @@ $$ \tau_r \frac{dv(\theta)}{dt} = -v(\theta) + F\left( \int d\theta' [W(\theta, 
 - Simulating 100 billion individual neurons is computationally nearly impossible. However, if we treat the cortex as a continuous sheet, we can use Calculus (specifically Integro-Differential Equations) to predict the behavior of the whole system without simulating every cell.
     - We can solve for Stationary States: Where the activity forms a "bump" (representing a memory or a specific perception).
     - We can predict Waves: How an itch or a visual flash "spreads" across the brain's surface.
+
+
+
+
+
+
+## 7.3 Feedforward Networks
+
+- Coordinate Transformations in Feedforward Networks
+    - This chapter describes how the brain converts a **retinal coordinate** ($s$) into a **body-centered coordinate** ($s+g$) using a single layer of feedforward connections. This transformation is essential for reaching toward an object regardless of where the eyes are looking.
+
+- Biological Foundation: Area 7a and Gain Modulation
+    - In the posterior parietal cortex (Area 7a), neurons do not simply encode the location of a stimulus. 
+    - Their response to a visual stimulus is "multiplied" or **modulated** by the gaze angle.
+    - **$s$:** Position of the stimulus relative to the fixation point (retinal).
+    - **$g$:** Angle of the eyes relative to the body midline (gaze).
+    - **$u$ (Input Neuron):** A "gain-modulated" neuron whose response $f_u$ is defined by:
+    - Where $\xi$ is the preferred retinal location and $\gamma$ is the preferred gaze angle.
+
+$$ f_u(s, g) = \exp\left(-\frac{(s - \xi)^2}{2\sigma_{\xi}^2}\right) \times \text{sig}(g - \gamma) $$
+
+- The Mathematical Solution: Population Integration
+    - The network computes the coordinate transformation by summing the activity of a vast population of these input neurons. The steady-state response of an output neuron ($v_\infty$) is given by:
+
+$$ v_{\infty} = F\left( \int d\xi d\gamma \, w(\xi, \gamma) f_u(s - \xi, g - \gamma) \right) $$
+
+- **The "Shift" Constraint:**
+    - To ensure the output represents a specific body-centered location (like $0^\circ$), the synaptic weights $w(\xi, \gamma)$ must be a function of the **sum** of the preferred angles:
+    - This specific weighting ensures that if the eyes move by $+10^\circ$, the retinal peak must move by $-10^\circ$ for the neuron to continue firing, effectively "locking" the response to a fixed position relative to the body.
+
+$$ w(\xi, \gamma) = w(\xi + \gamma) = \exp\left(-\frac{(\xi + \gamma)^2}{2\sigma_w^2}\right) $$
+
+### ANN vs BNN
+
+Here is a concise breakdown of the computational flows for $s + g$ (Target = Retina + Gaze).
+
+- The ANN Flow: Algebraic Calculation
+    - In an Artificial Neural Network, the flow is **symbolic**. It treats numbers as magnitudes.
+    - **Input:** Two specific wires carry the numbers $10.0$ ($s$) and $20.0$ ($g$).
+    - **Process:** A single neuron multiplies these inputs by weights (e.g., $1.0$) and sums them: $(10 \times 1) + (20 \times 1)$.
+    - **Output:** One neuron fires with an **intensity** of $30.0$.
+    - **Key Concept:** The **magnitude** of the signal represents the value.
+
+- The BNN Flow: Topographic Mapping
+    - In a Biological Neural Network, the flow is **spatial**. It treats numbers as physical addresses.
+    - **Input:** No "number" is sent. Instead, a specific **location** on the Retinal Map (the $10^\circ$ spot) and a **location** on the Gaze Map (the $20^\circ$ spot) become active.
+    - **Process (Gain Modulation):** The Gaze signal acts as a "routing switch." Based on the synaptic weights $w(\xi + \gamma)$, the gaze signal shifts the incoming retinal activity to a new destination.
+    - **Output:** A specific **location** on the Body-Centered Map (the $30^\circ$ spot) becomes active.
+    - **Key Concept:** The **address** of the active neuron represents the value.

@@ -1,8 +1,13 @@
+import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from jax import lax, random
+import optax
+from jax import jit, lax, random, vmap
 from jax.nn import relu
 from jax.random import PRNGKey, normal, uniform
+
+from theoretical_neuroscience.ann import mlp_forward, mlp_params, mse_loss
+from theoretical_neuroscience.utils import gaussian
 
 
 def c7p2_firing_rate_models():
@@ -44,5 +49,73 @@ def c7p2_firing_rate_models():
     plt.savefig("c7p2_firing_rate_models")
 
 
+# =====================================
+
+
+def c7p3_feedforward_networks_ANN():
+    n_samples = 5000
+    k1, k2 = random.split(PRNGKey(42))
+    s = uniform(k1, (n_samples, 1), minval=-40, maxval=40)
+    g = uniform(k2, (n_samples, 1), minval=-20, maxval=20)
+    x = jnp.concat([s, g], axis=1)
+    y = s + g
+
+    params = mlp_params(PRNGKey(42), [2, 32, 32, 1])
+    opt = optax.adam(learning_rate=1e-3)
+    opt_state = opt.init(params)
+
+    @jit
+    def loss_fn(params, x, y):
+        return mse_loss(mlp_forward(params, x), y)
+
+    @jit
+    def update(params, opt_state, x, y):
+        grads = jax.grad(loss_fn)(params, x, y)
+        updates, opt_state = opt.update(grads, opt_state)
+        return optax.apply_updates(params, updates), opt_state
+
+    for step in range(1001):
+        params, opt_state = update(params, opt_state, x, y)
+        if step % 200 == 0:
+            print(f"step: {step}, loss: {loss_fn(params, x, y):.4f}")
+
+
+def c7p3_feedforward_networks_BNN():
+    # input:
+    s = jnp.linspace(-60, 60, 200)
+    g = jnp.array([0, 10, -20])
+
+    # parameters:
+    s_pref = jnp.linspace(-120, 120, 100)
+    g_pref = jnp.linspace(-120, 120, 100)
+    s_pref, g_pref = jnp.meshgrid(s_pref, g_pref)
+    mu = 0
+    weights = gaussian(s_pref + g_pref, mu, 20)
+
+    @jit
+    def forward(s, g):
+        # retinal_term * gaze_dependent_gain_modulation
+        r1 = gaussian(s, s_pref, 10) * gaussian(g, g_pref, 15)
+        r2 = jnp.sum(r1 * weights)
+        return r2
+
+    f1 = vmap(forward, in_axes=(0, None))
+    f2 = vmap(f1, in_axes=(None, 0))
+    r2 = f2(s, g)
+
+    styles = ["-", "--", ":"]
+    colors = ["black", "blue", "red"]
+    for i, g_i in enumerate(g):
+        r_i = r2[i]
+        s_max = s[jnp.argmax(r_i)]
+        label = f"g: {g_i}, s_max: {s_max:.1f}, s+g: {s_max + g_i:.1f}"
+        plt.plot(s, r_i, styles[i], c=colors[i], label=label)
+    plt.xlabel("s")
+    plt.ylabel("response")
+    plt.title(f"response from A SINGLE NEURON that prefers s+g={mu}")
+    plt.legend()
+    plt.savefig("c7p3_feedforward_networks_BNN")
+
+
 if __name__ == "__main__":
-    c7p2_firing_rate_models()
+    c7p3_feedforward_networks_BNN()

@@ -5,6 +5,7 @@ version = "0.0.2"
 description = "???"
 dependencies = [
     "jax",
+    "optax",
     "matplotlib",
     "opencv-python",
 ]
@@ -33,4 +34,4 @@ theoretical-neuroscience = { path = ".", editable = true }
 build = "rm -rf dist/ && python -m build"
 publish = "python -m twine upload dist/*"
 test = "pytest tests/"
-clean = "isort . --skip .pixi && black . --exclude .pixi && flake8 . --exclude .pixi --ignore=E501,E203,E741"
+clean = "isort . --skip .pixi && black . --exclude .pixi && flake8 . --exclude .pixi --ignore=E501,E203,E741,W605"
