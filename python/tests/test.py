@@ -7,6 +7,7 @@ from jax.nn import relu
 from jax.random import PRNGKey, normal, uniform
 
 from theoretical_neuroscience.ann import mlp_forward, mlp_params, mse_loss
+from theoretical_neuroscience.plot import plot1
 from theoretical_neuroscience.utils import gaussian
 
 
@@ -117,5 +118,39 @@ def c7p3_feedforward_networks_BNN():
     plt.savefig("c7p3_feedforward_networks_BNN")
 
 
+# =============================
+
+
+def bio_rnn(
+    lambda_max=0.8,
+    N=100,  # number of neurons
+    tau=10,
+    dt=0.1,
+    steps=1000,
+):
+    x = jnp.linspace(0, 2 * jnp.pi, N)
+    e1 = jnp.sin(x)
+    e1 = e1 / jnp.linalg.norm(e1)
+    M = lambda_max * jnp.outer(e1, e1)
+
+    h = sum([jnp.sin(n * x) for n in range(3)])
+
+    def scan(v, _):
+        RHS = -v + h + jnp.dot(M, v)
+        v_next = v + RHS / tau * dt
+        return v_next, v_next
+
+    _, v_hist = lax.scan(scan, jnp.zeros(N), jnp.arange(steps))
+    return {"input: h": h, "output: final v": v_hist[-1]}
+
+
+def c7p4_recurrent_networks():
+    r1 = bio_rnn()
+    plots = {
+        "selective_amplification": r1,
+    }
+    plot1(plots, "c7p4_recurrent_networks")
+
+
 if __name__ == "__main__":
-    c7p3_feedforward_networks_BNN()
+    c7p4_recurrent_networks()

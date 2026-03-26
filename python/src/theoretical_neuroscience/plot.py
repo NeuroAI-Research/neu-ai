@@ -4,7 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .utils import D_TYPE, shape
+from .utils import D_TYPE
 
 
 def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
@@ -17,7 +17,8 @@ def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
     for k, v in data.items():
         i += 1
         plt.subplot(R, C, i)
-        title = f"{k} {shape(v)}"
+        shape = v.shape if hasattr(v, "shape") else ""
+        title = f"{k} {shape}"
         if ".hist" in k:
             v = v.flatten()
             mu, std = v.mean(), v.std()
@@ -29,6 +30,10 @@ def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
             plt.imshow(v, cmap="gray")
         elif isinstance(v, list):
             plt.plot(v[0], v[1])
+        elif isinstance(v, dict):
+            for k2, v2 in v.items():
+                plt.plot(v2, label=k2)
+            plt.legend()
         else:
             plt.plot(v)
         plt.title(title)

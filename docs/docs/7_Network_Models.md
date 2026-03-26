@@ -119,3 +119,69 @@ Here is a concise breakdown of the computational flows for $s + g$ (Target = Ret
     - **Process (Gain Modulation):** The Gaze signal acts as a "routing switch." Based on the synaptic weights $w(\xi + \gamma)$, the gaze signal shifts the incoming retinal activity to a new destination.
     - **Output:** A specific **location** on the Body-Centered Map (the $30^\circ$ spot) becomes active.
     - **Key Concept:** The **address** of the active neuron represents the value.
+
+
+
+
+
+## 7.4 Recurrent Networks
+
+- Linear Recurrent Models
+    - A basic linear recurrent network is described by a differential equation where the change in firing rate $v$ depends on the input $h$ and the internal feedback via a weight matrix $M$:
+    - To solve this, the text uses **eigenvector expansion**. 
+    - The firing rate vector $v(t)$ is expressed as a sum of eigenvectors $e_{\mu}$ of the matrix $M$:
+    - This allows the system to be broken down into independent equations for each coefficient $c_{\nu}$:
+
+$$ \tau_{r}\frac{dv}{dt}=-v+h+M\cdot v \\[5pt]
+v(t)=\sum_{\mu=1}^{N_{c}}c_{\mu}(t)e_{\mu} \\[5pt]
+\tau_{r}\frac{dc_{v}}{dt}=-(1-\lambda_{v})c_{v}(t)+e_{v}\cdot h $$
+
+- Key Mathematical Behaviors:
+    - **Stability:** If any eigenvalue $\lambda_{v} > 1$, the network is unstable (rates grow infinitely).
+    - **Selective Amplification:** If an eigenvalue $\lambda_{1}$ is close to 1, the network massively amplifies the input component aligned with that eigenvector:    
+    $$ v_{\infty}\approx\frac{(e_{1}\cdot h)e_{1}}{1-\lambda_{1}} $$
+    - **Integration:** If $\lambda_{1} = 1$, the network acts as an integrator, maintaining activity even after the input $h$ is removed (used to model eye position):
+    $$ v(t)\approx\frac{e_{1}}{\tau_{r}}\int_{0}^{t}dt^{\prime}e_{1}\cdot h(t^{\prime}) $$
+
+- Continuous Linear Networks
+    - For neurons labeled by a continuous variable (like a stimulus angle $\theta$), the summation becomes an integral:
+
+    $$ \tau_{r}\frac{dv(\theta)}{dt}=-v(\theta)+h(\theta)+\rho_{\theta}\int_{-\pi}^{\pi}d\theta^{\prime}M(\theta-\theta^{\prime})v(\theta^{\prime}) $$
+
+    - This is solved using **Fourier Series**, where the eigenvalues $\lambda_{\mu}$ correspond to different Fourier components of the weight function $M$:
+    
+    $$\lambda_{\mu}=\rho_{\theta}\int_{-\pi}^{\pi}d\theta^{\prime}M(\theta^{\prime})cos(\mu\theta^{\prime})$$
+
+- Nonlinear and Rectified Networks
+    - Since biological firing rates cannot be negative, a **rectification** function $[ \cdot ]_+$ is introduced:
+    
+    $$\tau_{r}\frac{dv(\theta)}{dt}=-v(\theta)+[h(\theta)+\frac{\hat{\lambda}_{1}}{\pi}\int_{-\pi}^{\pi}d\theta^{\prime}cos(\theta-\theta^{\prime})v(\theta^{\prime})]_{+}$$
+
+    - This nonlinearity enables several advanced behaviors:
+        - **Winner-Takes-All:** The network can pick the strongest of two competing inputs and suppress the other.
+        - **Gain Modulation:** Adding a constant "gaze" input can multiplicatively scale (gain-modulate) the response to a visual stimulus.
+        - **Sustained Activity:** Strong recurrent connections allow the network to "lock" into a pattern of activity that persists without input, serving as a form of **working memory**.
+
+- Network Stability and Lyapunov Functions
+    - To prove that a nonlinear network will settle into a stable state (a "fixed point"), the text introduces the **Lyapunov function** $L(I)$. 
+    - If the weight matrix $M$ is symmetric and the activation function $F$ is well-behaved, the network always moves toward a state that minimizes $L$:
+    
+    $$ L(I)=\sum_{a=1}^{N_{a}}(\int_{0}^{I_{a}}dz_{a}z_{a}F^{\prime}(z_{a})-h_{a}F(I_{a})-\frac{1}{2}\sum_{a^{\prime}=1}^{N_{a}}F(I_{a})M_{aa^{\prime}}F(I_{a^{\prime}})) $$
+    
+    - Because $\frac{dL}{dt} \leq 0$, the system must eventually stop changing.
+
+- Associative Memory
+    - The text describes how to set synaptic weights $M$ so that specific activity patterns $v^m$ become fixed points of the network (Autoassociative memory). 
+    - A common method is the **covariance rule**, which links units that are active together in a memory:
+    
+    $$ M=\frac{\lambda}{c^{2}aN_{b}(1-a)}\sum_{n=1}^{Nmcm}(v^{n}-acn)(v^{n}-acn)-\frac{nn}{aN_{b}} $$
+
+    - This allows the network to "recall" a full memory pattern even if provided with only a noisy or partial starting input.
+
+- Computational functionalities:
+    - Selective Amplification
+    - Integration
+    - Winner-Takes-All
+    - Gain Modulation
+    - Sustained Activity
+    - Associative Memory
