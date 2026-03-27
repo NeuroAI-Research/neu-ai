@@ -152,5 +152,65 @@ def c7p4_recurrent_networks():
     plot1(plots, "c7p4_recurrent_networks")
 
 
+# =================
+
+
+def c7p5_excitatory_inhibitory_networks():
+    # M_EE, M_EI, M_IE, M_II
+    M = jnp.array([[1.25, -1.0], [1.0, 0.0]])
+    gamma = jnp.array([-10.0, 10.0])
+    tau_E = 0.01
+    tau_I_bif = tau_E * (1 - M[1, 1]) / (M[0, 0] - 1)
+
+    def simulate(tau_I, steps=2000, dt=1e-3):
+        tau = jnp.array([tau_E, tau_I])
+
+        @jit
+        def step_fn(v, _):
+            next_v = v + dt / tau * (-v + relu(M @ v - gamma))
+            return next_v, next_v
+
+        v0 = jnp.array([20.0, 20.0])
+        _, v_hist = lax.scan(step_fn, v0, jnp.arange(steps))
+        return v_hist
+
+    tau_Is = jnp.arange(0.01, 0.1, 0.002)
+    min_vE, max_vE = [], []
+
+    tau_I_plt = [0.03, 0.09]
+    R, C, i = len(tau_I_plt) + 1, 2, 0
+    plt.figure(figsize=(4 * C, 3 * R))
+
+    for tau_I in tau_Is:
+        tau_I = round(float(tau_I), 3)
+        vE, vI = simulate(tau_I).T
+        vE_stable = vE[-500:]
+        min_vE.append(jnp.min(vE_stable))
+        max_vE.append(jnp.max(vE_stable))
+        if tau_I in tau_I_plt:
+            i += 1
+            plt.subplot(R, C, i)
+            plt.title(f"tau_I: {tau_I}")
+            plt.plot(vE, label="vE")
+            plt.plot(vI, label="vI")
+            plt.legend()
+            i += 1
+            plt.subplot(R, C, i)
+            plt.title(f"tau_I: {tau_I}")
+            plt.plot(vE, vI, label="(vE, vI)")
+            plt.legend()
+
+    i += 1
+    plt.subplot(R, C, i)
+    plt.plot(tau_Is, max_vE, label="max_vE")
+    plt.plot(tau_Is, min_vE, label="min_vE")
+    plt.axvline(tau_I_bif, linestyle="--", label="tau_I for bifurcation")
+    plt.xlabel("tau_I")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig("c7p5_excitatory_inhibitory_networks")
+
+
 if __name__ == "__main__":
-    c7p4_recurrent_networks()
+    c7p5_excitatory_inhibitory_networks()

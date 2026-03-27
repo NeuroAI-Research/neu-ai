@@ -162,14 +162,6 @@ v(t)=\sum_{\mu=1}^{N_{c}}c_{\mu}(t)e_{\mu} \\[5pt]
         - **Gain Modulation:** Adding a constant "gaze" input can multiplicatively scale (gain-modulate) the response to a visual stimulus.
         - **Sustained Activity:** Strong recurrent connections allow the network to "lock" into a pattern of activity that persists without input, serving as a form of **working memory**.
 
-- Network Stability and Lyapunov Functions
-    - To prove that a nonlinear network will settle into a stable state (a "fixed point"), the text introduces the **Lyapunov function** $L(I)$. 
-    - If the weight matrix $M$ is symmetric and the activation function $F$ is well-behaved, the network always moves toward a state that minimizes $L$:
-    
-    $$ L(I)=\sum_{a=1}^{N_{a}}(\int_{0}^{I_{a}}dz_{a}z_{a}F^{\prime}(z_{a})-h_{a}F(I_{a})-\frac{1}{2}\sum_{a^{\prime}=1}^{N_{a}}F(I_{a})M_{aa^{\prime}}F(I_{a^{\prime}})) $$
-    
-    - Because $\frac{dL}{dt} \leq 0$, the system must eventually stop changing.
-
 - Associative Memory
     - The text describes how to set synaptic weights $M$ so that specific activity patterns $v^m$ become fixed points of the network (Autoassociative memory). 
     - A common method is the **covariance rule**, which links units that are active together in a memory:
@@ -185,3 +177,71 @@ v(t)=\sum_{\mu=1}^{N_{c}}c_{\mu}(t)e_{\mu} \\[5pt]
     - Gain Modulation
     - Sustained Activity
     - Associative Memory
+
+- brain modules:
+    1. The Oculomotor System (Neural Integrator)
+        - **Mechanism:** **Linear Integration ($\lambda = 1$).**
+        - This module is responsible for maintaining horizontal eye position. When the eyes move to a new position, the muscles require a constant tonic signal to counteract the elastic pull of the orbit. 
+        - The network acts as a mathematical integrator: it receives a transient velocity pulse (input $h$) and, because it is tuned to have an eigenvalue of 1, it maintains a persistent firing rate (output $v$) even after the input ceases. This allows the eyes to remain fixed at a specific angle.
+    2. Primary Visual Cortex (V1)
+        - **Mechanism:** **Selective Amplification & Nonlinear Gain Modulation.**
+        - **Orientation Tuning:** Recurrent connections amplify weak sensory inputs that align with a neuron's "preferred" orientation. This sharpens the response of the network to specific visual edges.
+        - **Contextual Modulation:** The nonlinearity ($[ \cdot ]_+$) allows the network to change its "gain" (sensitivity). For example, if a visual stimulus is presented, but the animal is also performing a specific task or shifting its gaze, the recurrent feedback can multiplicatively scale the visual response without changing the preferred orientation of the neurons.
+    3. Prefrontal Cortex (PFC)
+        - **Mechanism:** **Sustained Activity / Persistent States.**
+        - This is the biological basis for **Working Memory**. Unlike the oculomotor integrator which maintains a continuous range of values, the PFC uses strong recurrent excitation to create "stable fixed points." Once an input pushes the network into a specific state (e.g., remembering a specific location or a rule), the recurrent feedback is strong enough to keep the neurons firing in that pattern for several seconds, effectively "holding" the information in mind until it is needed.
+    4. Hippocampus (CA3 Region)
+        - **Mechanism:** **Associative Memory (Attractor Dynamics).**
+        - The CA3 region is characterized by high levels of recurrent collaterals (neurons exciting their neighbors). It functions as an **autoassociative memory** using a covariance-based weight matrix (Hebbian learning). 
+        - **Pattern Completion:** If a partial or noisy version of a memory is presented, the recurrent dynamics drive the network toward the nearest "stored" fixed point, effectively "completing" the memory.
+    5. Head-Direction System
+        - **Mechanism:** **Continuous Attractor Networks (Bump Attractors).**
+        - This system uses a continuous version of recurrent math where the neurons are arranged conceptually in a circle (representing 0° to 360°). Recurrent excitation between "neighbors" in the head-direction space and inhibition for distant neurons creates a "bump" of activity. This bump represents the animal's current heading and is moved around the circle by vestibular inputs, allowing the brain to maintain a sense of direction even in the dark.
+
+
+
+
+
+## 7.5 Excitatory-Inhibitory Networks
+
+- The Two-Population Model (Homogeneous)
+    - The simplest model describes all excitatory neurons with a single firing rate $v_E$ and all inhibitory neurons with rate $v_I$. The dynamics are defined by two coupled differential equations:
+
+$$ \tau_{E}\frac{dv_{E}}{dt} = -v_{E} + [M_{EE}v_{E} + M_{EI}v_{I} - \gamma_{E}]_{+} \\[5pt]
+\tau_{I}\frac{dv_{I}}{dt} = -v_{I} + [M_{II}v_{I} + M_{IE}v_{E} - \gamma_{I}]_{+} $$
+
+- **Important Note on $M$:**
+    - For this specific homogeneous model, **the synaptic weights ($M_{EE}, M_{IE}, M_{EI}, M_{II}$) are now scalars** rather than matrices
+    - They represent the total strength of the connections between the populations
+    - However, in more complex versions of E-I models (like the olfactory bulb or selective amplification models later in the chapter), $M$ can return to being a matrix or a function of spatial/preferred angles
+
+- Phase-Plane Analysis
+    - To understand the system's behavior, we look at the **phase plane** ($v_E$ vs $v_I$)
+    - **Nullclines:** These are the lines where $\frac{dv_E}{dt} = 0$ or $\frac{dv_I}{dt} = 0$. For the equations above, these are straight lines
+    - **Fixed Points:** The intersection of these nullclines represents a fixed point where the system remains static
+
+- Linear Stability Analysis
+    - The stability of a fixed point (whether the system returns to it after a disturbance) is determined by the **stability matrix**
+    - **Stability Matrix ($L$):** Formed by taking derivatives of the rates at the fixed point:
+
+$$ L = \begin{pmatrix} \frac{M_{EE} - 1}{\tau_E} & \frac{M_{EI}}{\tau_E} \\[5pt]
+\frac{M_{IE}}{\tau_I} & \frac{M_{II} - 1}{\tau_I} \end{pmatrix} $$
+
+- **Eigenvalues ($\lambda$):**
+    - The stability is determined by the real parts of the eigenvalues of this matrix:
+
+$$\lambda = \frac{1}{2} \left( \frac{M_{EE}-1}{\tau_E} + \frac{M_{II}-1}{\tau_I} \pm \sqrt{\left( \frac{M_{EE}-1}{\tau_E} - \frac{M_{II}-1}{\tau_I} \right)^2 + \frac{4M_{EI}M_{IE}}{\tau_E\tau_I}} \right)$$
+
+- **Stable Fixed Point:** Real parts of both $\lambda < 0$
+- **Unstable Fixed Point:** At least one real part of $\lambda > 0$
+- **Oscillatory Behavior:** Occurs when the term under the radical is negative, making the eigenvalues a complex conjugate pair
+    - **Collapsing Spiral:** Real part is negative
+    - **Expanding Spiral/Limit Cycle:** Real part is positive
+
+- Key Transitions: Bifurcations
+    - **Hopf Bifurcation:** Occurs when a fixed point becomes unstable and a **limit cycle** (periodic oscillation) emerges as a parameter (like $\tau_I$) is changed
+    - **Saddle-node Bifurcation:** Occurs when two fixed points (one stable, one unstable) collide and disappear
+
+- Application Examples
+    - **The Olfactory Bulb:** Uses an E-I model where $M_{EE} = M_{II} = 0$ (based on anatomy) to explain how odor inputs trigger 40 Hz oscillations during sniffs
+    - **Selective Amplification:** Demonstrates that E-I networks can achieve high selective amplification without creating "spurious" tuned activity (persistent perceptions) that purely excitatory networks might suffer from
