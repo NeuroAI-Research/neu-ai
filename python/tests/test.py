@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import optax
 from jax import jit, lax, random, vmap
-from jax.nn import relu
+from jax.nn import relu, sigmoid
 from jax.random import PRNGKey, normal, uniform
 
 from theoretical_neuroscience.ann import mlp_forward, mlp_params, mse_loss
@@ -212,5 +212,40 @@ def c7p5_excitatory_inhibitory_networks():
     plt.savefig("c7p5_excitatory_inhibitory_networks")
 
 
+# ========================
+
+
+def c7p6_stochastic_networks():
+    N = 10  # number of neurons
+    key = PRNGKey(0)
+    M_key, h_key, key0 = random.split(key, 3)
+    steps = 5000
+
+    M = normal(M_key, (N, N))
+    M = (M + M.T) / 2
+    M = M.at[jnp.diag_indices(N)].set(0)
+    h = normal(h_key, (N,))
+
+    def energy(v):
+        return -jnp.dot(h, v) - 0.5 * jnp.dot(v, jnp.dot(M, v))
+
+    def gibbs_step(state, _):
+        v, key = state
+        key, idx_key, flip_key = random.split(key, 3)
+        # pick a random neuron to update (Glauber dynamics)
+        idx = random.randint(idx_key, (), 0, N)
+        I_a = h[idx] + jnp.dot(M[idx], v)
+        prob = sigmoid(I_a)
+        new_bit = random.bernoulli(flip_key, prob).astype(jnp.float32)
+        v = v.at[idx].set(new_bit)
+        return (v, key), energy(v)
+
+    v0 = jnp.zeros(N)
+    _, gibbs_energies = lax.scan(gibbs_step, (v0, key0), jnp.arange(steps))
+
+    plots = {"gibbs_energies": gibbs_energies, "gibbs_energies.hist": gibbs_energies}
+    plot1(plots, "c7p6_stochastic_networks")
+
+
 if __name__ == "__main__":
-    c7p5_excitatory_inhibitory_networks()
+    c7p6_stochastic_networks()

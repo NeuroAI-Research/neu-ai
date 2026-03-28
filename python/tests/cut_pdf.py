@@ -1,7 +1,7 @@
 import pikepdf
 
 path = "./temp_Dayan_Abbott.pdf"
-a, b = 265, 274
+a, b = 273, 277
 diff = 16
 
 with pikepdf.Pdf.open(path) as pdf:

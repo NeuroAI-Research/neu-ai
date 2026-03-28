@@ -245,3 +245,38 @@ $$\lambda = \frac{1}{2} \left( \frac{M_{EE}-1}{\tau_E} + \frac{M_{II}-1}{\tau_I}
 - Application Examples
     - **The Olfactory Bulb:** Uses an E-I model where $M_{EE} = M_{II} = 0$ (based on anatomy) to explain how odor inputs trigger 40 Hz oscillations during sniffs
     - **Selective Amplification:** Demonstrates that E-I networks can achieve high selective amplification without creating "spurious" tuned activity (persistent perceptions) that purely excitatory networks might suffer from
+
+
+
+
+
+## 7.6 Stochastic Networks (Boltzmann Machine)
+
+- The Input: $I_a(t)$
+    - Before we get to probability, we need to know the "pressure" acting on a neuron. 
+    - This is a simple weighted sum. It says the total input to neuron $a$ is the sum of external "nudges" ($h_a$) and the influence of all its neighbors ($M_{aa'} \cdot v_{a'}$)
+
+$$ I_a(t) = h_a(t) + \sum_{a'=1}^{N_v} M_{aa'} \cdot v_{a'}(t) $$
+
+- The Sigmoid "Switch": $F(I_a)$
+    - In this model, neurons are binary: they are either **1 (On)** or **0 (Off)**. We use a probability rule to decide their state:
+    - We use the **Sigmoid function** because it perfectly maps any input (from $-\infty$ to $+\infty$) onto a scale between 0 and 1 
+    - If the input $I_a$ is very large and positive, $F(I_a)$ is nearly 1 (the neuron will almost certainly turn on). If it's very negative, $F(I_a)$ is nearly 0 (it stays off).
+
+$$ P[v_a = 1] = F(I_a) = \frac{1}{1 + \exp(-I_a)} $$
+
+- The Energy Function: $E(v)$
+    - To understand the whole network, we define its **"stress level"** or **Energy**:
+    - In physics, systems naturally want to fall into low-energy states. 
+    - We put a **negative sign** in front so that if a neuron $v$ is "On" and its input $h$ or $M$ is positive (meaning it *should* be on), the Energy **decreases**. A low Energy score means the network is in a state that "makes sense" given its weights
+
+$$ E(v) = -h \cdot v - \frac{1}{2}v \cdot M \cdot v $$
+
+- The **Boltzmann Distribution**: $P[v]$
+    - Because the network is stochastic (constantly "shaking" with noise), it doesn't just sit in one state. It wanders, but it prefers low-energy states
+    - The exponential $exp(-E)$ turns **addition** (adding up energies of different neurons) into **multiplication** (the probability of independent events)
+    - $Z$ is the **partition function**, which is just the sum of the top part for every possible state
+
+$$ P[v] = \frac{\exp(-E(v))}{Z} $$
+
+
