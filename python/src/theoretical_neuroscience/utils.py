@@ -41,3 +41,7 @@ def shape(x):
 
 def gaussian(x, mu, sig):
     return jnp.exp(-((x - mu) ** 2) / (2 * sig**2))
+
+
+def SMA(x, T):
+    return jnp.convolve(x, jnp.ones(T), "valid") / T

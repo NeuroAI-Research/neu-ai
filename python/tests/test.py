@@ -1,7 +1,10 @@
 import jax.numpy as jnp
-from jax import jit, lax
+from jax import jit, lax, random
+from jax.nn import softmax
+from jax.random import PRNGKey
 
 from theoretical_neuroscience.plot import plot1
+from theoretical_neuroscience.utils import SMA, postfix
 
 
 def c9p2_classical_conditioning():
@@ -54,5 +57,50 @@ def c9p2_classical_conditioning():
     plot1(plots, "c9p2_classical_conditioning")
 
 
+# =============================
+
+
+def c9p3_static_action_choice():
+    def update_indirect(m: jnp.ndarray, act_idx, reward, epsilon):  # Model-Based
+        # m_a -> m_a + epsilon * (reward - m_a)
+        delta = reward - m[act_idx]
+        return m.at[act_idx].add(epsilon * delta)
+
+    def update_direct(
+        m: jnp.ndarray, act_idx, reward, epsilon, probs, r_bar
+    ):  # Model-Free
+        # m_a' -> m_a' + epsilon * (delta_aa' - P_a') * (reward - r_bar)
+        indices = jnp.arange(len(m))
+        kronecker = (indices == act_idx).astype(jnp.float32)
+        return m + epsilon * (kronecker - probs) * (reward - r_bar)
+
+    def sim(type, beta=1.0, epsilon=0.1):
+        n_trials = 200
+        m = jnp.zeros(2)
+        r_bar = 1.5
+        key = PRNGKey(42)
+        M, R = [], []
+
+        for t in range(n_trials):
+            probs = softmax(beta * m)
+            key, k2 = random.split(key)
+            act_idx = random.choice(k2, 2, p=probs)
+
+            means = jnp.array([1.0, 2.0]) if t < n_trials / 2 else jnp.array([2.0, 1.0])
+            reward = means[act_idx]
+            if type == "indirect":
+                m = update_indirect(m, act_idx, reward, epsilon)
+            else:
+                m = update_direct(m, act_idx, reward, epsilon, probs, r_bar)
+            M.append(m)
+            R.append(reward)
+        M, R = jnp.array(M).T, jnp.array(R)
+        plots = {"action value m": {"m0": M[0], "m1": M[1]}, "SMA(reward)": SMA(R, 10)}
+        return postfix(plots, f" {type}")
+
+    plots = {**sim("indirect"), **sim("direct")}
+    plot1(plots, "c9p3_static_action_choice")
+
+
 if __name__ == "__main__":
-    c9p2_classical_conditioning()
+    c9p3_static_action_choice()

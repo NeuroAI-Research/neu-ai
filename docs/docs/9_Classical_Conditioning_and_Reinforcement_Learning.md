@@ -51,3 +51,54 @@ w \rightarrow w + \epsilon \delta u $$
 | **Extinction** | A learned response decays when the reward is removed | If $r=0$, then $\delta$ is negative, causing the weight $w$ to exponentially decay toward 0 |
 | **Overshadowing** | One stimulus is learned more strongly than another when paired | This is modeled by giving the two stimuli different learning rates ($\epsilon$) |
 | **Secondary Conditioning** | $s_2$ predicts $s_1$, which predicts reward. $s_2$ now evokes reward expectation | **TD Learning** explains this: the positive $\delta$ spike at the time of $s_1$ acts as a reward to drive the learning of $s_2$ |
+
+
+
+
+
+## 9.3 Static Action Choice
+
+- Biological Context: Bee Foraging
+    - The primary biological model is a bee choosing between different colored flowers (blue and yellow) to find nectar
+    - **Learning Preference:** Bees preferentially land on the flower color that delivers more reward
+    - **Adaptability:** If reward characteristics are swapped, bees quickly adjust their preferences
+    - **Risk Aversion:** Real bumblebees often prefer a "constant" flower (reliable $2~\mu l$ of nectar) over a "variable" flower that has the same mean reward but higher uncertainty
+    - **Subjective Utility:** This risk-averse behavior is modeled mathematically by assuming bees value nectar based on a **concave utility function** rather than raw volume, meaning the "utility" of a variable reward is perceived as lower than a steady one
+
+- Mathematical Framework: Stochastic Choice
+    - The decision process is modeled as a **stochastic two-armed bandit problem**
+    - The model bee does not choose a flower deterministically but follows a probability distribution
+    - To decide between blue ($b$) and yellow ($y$), the model uses the **softmax distribution**:
+
+    $$ P[b] = \frac{\exp(\beta m_b)}{\exp(\beta m_b) + \exp(\beta m_y)} $$
+
+    - **Action Values ($m_b, m_y$):** These parameters represent the "value" or preference for each action, adjusted through learning
+    - **Exploration-Exploitation Parameter ($\beta$):** This constant controls the randomness of choice:
+        - **Large $\beta$ (Exploitation):** The bee almost always chooses the flower with the higher $m$ value
+        - **Small $\beta$ (Exploration):** The bee's actions are more random, allowing it to sample different flowers to see if reward conditions have changed
+
+- Two Learning Models (The "Actors")
+    - The chapter compares two mathematical methods for how the bee updates its action values ($m$) based on rewards ($r$)
+
+- A. The Indirect Actor
+    - This model learns the **average reward** for each action
+    - **The Delta Rule:** When a bee visits a flower and receives reward $r$, it updates the value ($m$) using a prediction error ($\delta$):
+    
+    $$ m \rightarrow m + \epsilon(r - m) $$
+
+    - **Mechanism:** $m$ eventually tracks the average nectar volume $\langle r \rangle$
+    - The policy is "indirect" because it is mediated by these estimated values
+
+- B. The Direct Actor
+    - This model bypasses estimating average rewards and instead adjusts $m$ values to directly **maximize the total expected reward**
+    - **Stochastic Gradient Ascent:** The $m$ values are updated so that, over time, the change is proportional to the gradient of the expected reward
+    - **Learning Rule:** When action $a$ is taken, the values are updated as:
+
+    $$ m_{a'} \rightarrow m_{a'} + \epsilon(\delta_{aa'} - P[a'])(r_a - \bar{r}) $$
+    
+    - $\delta_{aa'}$ is $1$ if $a=a'$ and $0$ otherwise
+    - The Error Term $(\delta_{aa'} - P[a'])$: This compares what you did ($\delta$) with what you expected to do ($P$). If you took an action you usually don't take (low $P$) and got a huge reward, the update to $m$ will be very large.
+    - $\bar{r}$ is a reference reward like the mean reward
+    - The Reward Term $(r_a - \bar{r})$: This determines the direction of the change. If the reward was better than the baseline ($r > \bar{r}$), you increase the probability of that action. If it was worse than the baseline, you decrease it.
+    - Update All Weights: Unlike the Indirect Actor, the Direct Actor updates all action values on every trial, even for the flowers it didn't visit.
+    - **Performance:** While theoretically sound, the direct actor often learns more slowly than the indirect actor and can struggle to adapt when reward characteristics swap
