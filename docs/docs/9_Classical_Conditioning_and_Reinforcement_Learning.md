@@ -102,3 +102,39 @@ w \rightarrow w + \epsilon \delta u $$
     - The Reward Term $(r_a - \bar{r})$: This determines the direction of the change. If the reward was better than the baseline ($r > \bar{r}$), you increase the probability of that action. If it was worse than the baseline, you decrease it.
     - Update All Weights: Unlike the Indirect Actor, the Direct Actor updates all action values on every trial, even for the flowers it didn't visit.
     - **Performance:** While theoretically sound, the direct actor often learns more slowly than the indirect actor and can struggle to adapt when reward characteristics swap
+
+
+
+
+## 9.4 Sequential Action Choice
+
+- The Mathematical Mechanics
+    - The "actor-critic" model operates by interleaving two distinct learning steps: evaluating how good a state is (the critic) and improving the choice of actions (the actor)
+
+- The Critic: Policy Evaluation
+    - The critic estimates the total future reward, $v(u)$, for a location $u$. It updates its weight $w(u)$ using the **temporal difference (TD) learning rule**:
+
+    $$ \delta = r_a(u) + \gamma v(u') - v(u) \\[5pt] 
+    w(u) \rightarrow w(u) + \epsilon \delta $$
+    
+    - $\delta$ measures the difference between the actual outcome (immediate reward $r_a$ plus the value of the next state $v(u')$) and the expected outcome ($v(u)$)
+    - **$\epsilon$:** learning rate
+    - To account for time, rewards received later are weighted less using a discount factor $\gamma \in [0, 1]$
+
+- The Actor: Policy Improvement
+    - The actor decides which action to take (e.g., turning left or right) using a **softmax distribution**
+    - The probability of choosing action $a'$ at location $u$ is determined by its action value $m_{a'}(u)$
+
+    $$ m_{a'}(u) \rightarrow m_{a'}(u) + \epsilon(\delta_{aa'} - P[a'; u])\delta $$
+
+    - **$\delta_{aa'}$:** This is 1 if action $a'$ was the one actually chosen, and 0 otherwise
+    - **$P[a'; u]$:** The current probability of taking action $a'$
+    - **$\delta$:** The same prediction error from the critic. If $\delta$ is positive (the result was better than expected), the action value $m$ for the chosen action increases, making that action more likely in the future
+
+- Biological Implementation
+    - **Dopamine Gating:** The $\delta$ term is believed to be represented by **dopamine neurons** in the VTA or substantia nigra. These neurons release dopamine onto the **striatum** (part of the basal ganglia)
+    - **The Three-Term Rule:** Synaptic learning in the striatum is "gated" by this dopamine signal. The three terms are:
+        1. The input (state vector $u$ from hippocampal place cells)
+        2. The output (the action chosen by the actor cell)
+        3. The reinforcement signal ($\delta$ provided by dopamine)
+    - **Hippocampal Place Cells:** These provide the spatial "state vector" $u$ used in the equations to help the animal identify its current location in the maze

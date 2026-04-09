@@ -102,5 +102,57 @@ def c9p3_static_action_choice():
     plot1(plots, "c9p3_static_action_choice")
 
 
+# ===================
+
+
+def c9p4_sequential_action_choice():
+    n_states = 11
+    tar_state = 5
+    gamma = 0.95  # exponential discounting
+    lr = 0.2  # learning rate
+    beta = 2.0  # softmax inverse temperature
+    n_episode = 501
+
+    @jit
+    def ac_update(s, s2, r, v: jnp.ndarray, m: jnp.ndarray, act, probs):
+        # CRITIC: Prediction Error delta = r + gamma * V(s') - V(s)
+        delta = r + gamma * v[s2] - v[s]
+        # CRITIC UPDATE: v -> v + epsilon * delta
+        v = v.at[s].add(lr * delta)
+        # ACTOR UPDATE: m -> m + epsilon * (Indicator - Probability) * delta
+        kronecker = jnp.eye(2)[act]
+        m = m.at[s].add(lr * (kronecker - probs) * delta)
+        return v, m
+
+    v = jnp.zeros(n_states)
+    m = jnp.zeros((n_states, 2))
+    key = PRNGKey(42)
+    v_hist = {}
+
+    for ep in range(n_episode):
+        key, k2 = random.split(key)
+        s = random.randint(k2, (), 0, n_states)
+        while s != tar_state:
+            key, k3 = random.split(key)
+            probs = softmax(beta * m[s])
+            act = random.choice(k3, 2, p=probs)
+
+            ds = [-1, 1][act]
+            s2 = jnp.clip(s + ds, 0, n_states - 1)
+            r = 1.0 if s2 == tar_state else 0.0
+
+            v, m = ac_update(s, s2, r, v, m, act, probs)
+            s = s2
+        if ep % 50 == 0:
+            v_hist[ep] = v.copy()
+
+    probs = softmax(beta * m, axis=1).T
+    plots = {
+        "critic v": {f"ep{i}": v_hist[i] for i in [0, 50, 500]},
+        "final probs": {"p_left": probs[0], "p_right": probs[1]},
+    }
+    plot1(plots, "c9p4_sequential_action_choice")
+
+
 if __name__ == "__main__":
-    c9p3_static_action_choice()
+    c9p4_sequential_action_choice()
