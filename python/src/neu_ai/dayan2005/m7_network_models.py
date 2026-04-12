@@ -6,9 +6,10 @@ from jax import jit, lax, random, vmap
 from jax.nn import relu, sigmoid
 from jax.random import PRNGKey, normal, uniform
 
-from theoretical_neuroscience.ann import mlp_forward, mlp_params, mse_loss
-from theoretical_neuroscience.plot import plot1
-from theoretical_neuroscience.utils import gaussian
+from neu_ai.plot import plot1
+from neu_ai.utils import gaussian
+
+from .ann import mlp_forward, mlp_params, mse_loss
 
 
 def c7p2_firing_rate_models():

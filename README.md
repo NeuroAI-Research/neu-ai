@@ -1,2 +1,1 @@
-# theoretical-neuroscience
-
+# neu-ai

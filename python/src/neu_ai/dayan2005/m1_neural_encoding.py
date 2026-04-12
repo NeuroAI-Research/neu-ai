@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 from jax import random
 
-from theoretical_neuroscience.plot import plot1
+from neu_ai.plot import plot1
 
 
 def gaussian_tuning_curve(s, amp=50, mu=0, std=10):

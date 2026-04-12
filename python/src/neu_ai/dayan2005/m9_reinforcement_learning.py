@@ -3,8 +3,8 @@ from jax import jit, lax, random
 from jax.nn import softmax
 from jax.random import PRNGKey
 
-from theoretical_neuroscience.plot import plot1
-from theoretical_neuroscience.utils import SMA, postfix
+from neu_ai.plot import plot1
+from neu_ai.utils import SMA, postfix
 
 
 def c9p2_classical_conditioning():

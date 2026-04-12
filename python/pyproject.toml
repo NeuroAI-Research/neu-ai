@@ -1,8 +1,8 @@
 [project]
 authors = [{name = "Ricky Ding", email = "e0134117@u.nus.edu"}]
-name = "theoretical-neuroscience"
-version = "0.0.2"
-description = "???"
+name = "neu-ai"
+version = "0.0.1"
+description = "NeuroAI Research"
 dependencies = [
     "jax",
     "optax",
@@ -29,7 +29,7 @@ isort = "*"
 flake8 = "*"
 
 [tool.pixi.pypi-dependencies]
-theoretical-neuroscience = { path = ".", editable = true }
+neu-ai = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 build = "rm -rf dist/ && python -m build"

@@ -6,7 +6,7 @@ from jax.numpy import fft
 from jax.random import PRNGKey
 from jax.scipy.stats import norm
 
-from theoretical_neuroscience.plot import plot1
+from neu_ai.plot import plot1
 
 
 def c3p2_discrimination():

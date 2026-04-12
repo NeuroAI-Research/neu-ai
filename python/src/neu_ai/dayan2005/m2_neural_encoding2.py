@@ -3,9 +3,10 @@ from jax import lax, random, vmap
 from jax.nn import relu, sigmoid
 from jax.random import PRNGKey
 
-from theoretical_neuroscience.m1_neural_encoding import poisson_spikes
-from theoretical_neuroscience.plot import VideoMaker, plot1
-from theoretical_neuroscience.utils import frame_to_jax, read_video
+from neu_ai.plot import VideoMaker, plot1
+from neu_ai.utils import frame_to_jax, read_video
+
+from .m1_neural_encoding import poisson_spikes
 
 
 def predict_firing_rate(stimulus, kernel, r0, act="relu"):
