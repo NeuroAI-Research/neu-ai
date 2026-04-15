@@ -27,7 +27,7 @@ def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
             plt.hist(v, bins_k, range=range)
             title += f"\n mu={mu:.2g}, std={std:.2g}"
         elif ".img" in k:
-            plt.imshow(v, cmap="gray")
+            plt.imshow(v)
         elif isinstance(v, list):
             plt.plot(v[0], v[1])
         elif isinstance(v, dict):
@@ -82,3 +82,17 @@ class VideoMaker:
 
     def release(s):
         s.writer.release()
+
+
+def plot_img_patches(img: np.ndarray, patch_size, id):
+    H, W, C = img.shape
+    plt.figure(dpi=300, figsize=(9, 12))
+    plt.imshow(img)
+    for i in range(0, H, patch_size):
+        plt.axhline(i, color="red", lw=0.5, alpha=0.5)
+    for j in range(0, W, patch_size):
+        plt.axvline(j, color="red", lw=0.5, alpha=0.5)
+    plt.title(f"img broken into {patch_size}x{patch_size} patches")
+    plt.tight_layout()
+    plt.savefig(id)
+    plt.close()

@@ -3,6 +3,7 @@ from typing import Dict
 import cv2
 import jax.numpy as jnp
 import numpy as np
+import pypdfium2
 
 D_TYPE = Dict[str, np.ndarray]
 
@@ -26,6 +27,19 @@ def read_video(path):
             yield frame
     finally:
         vid.release()
+
+
+def read_pdf(path, indices=None, scale=2):
+    pdf = pypdfium2.PdfDocument(path)
+    if indices is None:
+        indices = range(len(pdf))
+    pages = []
+    for i in indices:
+        page = pdf[i]
+        img = page.render(scale).to_numpy() / 255.0
+        txt = page.get_textpage().get_text_bounded()
+        pages.append((img, txt))
+    return pages
 
 
 def shape(x):
