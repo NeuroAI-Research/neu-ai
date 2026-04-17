@@ -1,5 +1,7 @@
 # 1 Attention Is All You Need
 
+- [Attention Is All You Need](https://arxiv.org/pdf/1706.03762)
+
 - The code we used to train and evaluate our models is available at https://github.com/tensorflow/tensor2tensor.
 
 ## Abstract
