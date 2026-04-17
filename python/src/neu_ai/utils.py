@@ -21,8 +21,8 @@ def read_video(path):
     vid = cv2.VideoCapture(path)
     try:
         while vid.isOpened():
-            ret, frame = vid.read()
-            if not ret:
+            success, frame = vid.read()
+            if not success:
                 break
             yield frame
     finally:

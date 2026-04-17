@@ -1,3 +1,8 @@
 .katex-display {
   margin: 0 !important;
 }
+
+img {
+  margin: auto;
+  display: block;
+}
