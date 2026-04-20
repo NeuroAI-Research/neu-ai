@@ -204,7 +204,7 @@
     - the Pre-Norm, which was popularized by GPT-2 and used in many other architectures afterwards, 
     - and the Post-Norm flavor in OLMo 2 that we saw earlier.
 
-![](../imgs/06_Gemma3_vs_OLMo2.png)
+![](../imgs/06_models/Gemma3_vs_OLMo2.png)
 
 - I think this normalization layer placement is a relatively intuitive approach as it gets the best of both worlds: Pre-Norm and Post-Norm. 
     - In my opinion, a bit of extra normalization can't hurt. 
@@ -241,7 +241,7 @@
     - Llama 4 has also adopted an MoE approach and otherwise follows a relatively standard architecture that is **very similar to DeepSeek V3**, as shown in the figure below. 
     - **Llama 4 includes native multimodal support, similar to models like Gemma and Mistral**. However, since this article focuses on language modeling, we only focus on the text model.
 
-![](../imgs/06_DeepSeekV3_vs_Llama4.png)
+![](../imgs/06_models/DeepSeekV3_vs_Llama4.png)
 
 - While the Llama 4 Maverick architecture looks very similar to DeepSeek V3 overall, there are some interesting differences worth highlighting.
     - First, **Llama 4 uses Grouped-Query Attention** similar to its predecessors, whereas **DeepSeek V3 uses Multi-Head Latent Attention**, which we discussed at the beginning of this article. 
@@ -269,7 +269,7 @@
     - It has great token/sec throughput and a low memory footprint if you are planning to run it locally. But what's more, it's also easy to train locally (for educational purposes) due to its small size.
     - So, Qwen3 0.6B has replaced Llama 3 1B for me for most purposes. A comparison between these two architectures is shown below.
 
-![](../imgs/06_Qwen3_vs_Llama3.png)
+![](../imgs/06_models/Qwen3_vs_Llama3.png)
 
 - If you are interested in a human-readable Qwen3 implementation without external third-party LLM library dependencies, I recently implemented [Qwen3 from scratch (in pure PyTorch)](https://github.com/rasbt/LLMs-from-scratch/tree/main/ch05/11_qwen3).
 
@@ -288,7 +288,7 @@
 
 - To round up this section, let's look at Qwen3 235B-A22B (note that the A22B stands for "22B active parameters) to DeepSeek V3, which has almost twice as many active parameters (37B).
 
-![](../imgs/06_DeepSeekV3_vs_Qwen3.png)
+![](../imgs/06_models/DeepSeekV3_vs_Qwen3.png)
 
 - As shown in the figure above, the **DeepSeek V3 and Qwen3 235B-A22B architectures are remarkably similar**. What's noteworthy, though, is that the **Qwen3 model moved away from using a shared expert (earlier Qwen models, such as Qwen2.5-MoE did use a shared expert).**
     - Unfortunately, the Qwen3 team did not disclose any reason as to why they moved away from shared experts. 
@@ -330,3 +330,185 @@
 - Note that the experiments shown above were conducted with a relatively small GPT-style model of approximately 100 million parameters and relatively small context sizes. It is unclear how well these findings generalize to larger, contemporary LLMs.
 
 - **For this reason, the SmolLM3 team likely only "applied" NoPE (or rather omitted RoPE) in every 4th layer.**
+
+---
+
+## 8. Kimi K2 (Moonshot AI)
+
+- **Kimi K2 recently made big waves in the AI community due to being an open-weight model with an incredibly good performance. According to benchmarks, it's on par with the best proprietary models like Google's Gemini, Anthropic's Claude, and OpenAI's ChatGPT models.**
+
+- A notable aspect is its use of a variant of the relatively new **Muon optimizer over AdamW**. 
+    - As far as I know, this is the first time Muon was used over AdamW for any production model of this size (previously, it has only been shown to scale up to 16B). 
+    - This resulted in very nice training loss curves, which probably helped catapult this model to the top of the aforementioned benchmarks.
+
+- While people commented that the loss was exceptionally smooth (due to the lack of spikes), I think it's not exceptionally smooth (e.g., see the OLMo 2 loss curve in the figure below; also, the L2 norm of the gradient would probably be a better metric to track training stability). However, what's remarkable is how well the loss curve decays.
+
+- However, as mentioned in the introduction of this article, training methodologies are a topic for another time.
+
+![](https://substackcdn.com/image/fetch/$s_!_Zh8!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F78d5d4e4-7dc4-49ab-87be-a885ba78447e_759x684.png)
+
+- The model itself is 1 trillion parameters large, which is truly impressive.
+
+- **It may be the biggest LLM of this generation as of this writing (given the constraints that Llama 4 Behemoth is not released, proprietary LLMs don't count, and Google's 1.6 trillion Switch Transformer is an encoder-decoder architecture from a different generation).**
+
+- It's also coming full circle as **Kimi K2 uses the DeepSeek V3 architecture we covered at the beginning of this article except they made it larger**, as shown in the figure below.
+
+![](../imgs/06_models/DeepSeekV3_vs_KimiK2.png)
+
+- As shown in the figure above, Kimi K2 is basically the same as DeepSeek V3, except that it uses more experts in the MoE modules and fewer heads in the Multi-head Latent Attention (MLA) module.
+
+- Kimi K2 is not coming out of nowhere. The earlier Kimi 1.5 model discussed in the [Kimi k1.5: Scaling Reinforcement Learning with LLMs](https://arxiv.org/pdf/2501.12599) paper, was impressive as well. However, it had the bad luck that the DeepSeek R1 model paper was published on exactly the same date on January 22nd. Moreover, as far as I know, the Kimi 1.5 weights were never publicly shared.
+
+- So, most likely the Kimi K2 team took these lessons to heart and shared Kimi K2 as an open-weight model, before DeepSeek R2 was released. **As of this writing, Kimi K2 is the most impressive open-weight model.**
+
+- Update: On Nov 6, 2025 the Kimi K2 team also released their new “Thinking” model variant. The architecture is unchanged from Kimi K2 above, except that they extended the context size from 128k to 256k.
+
+- According to the benchmarks shared by the Kimi team, the model exceeds the performance of the leading proprietary LLMs. (Unfortunately, there is no direct comparison to DeepSeek R1.)
+
+---
+
+## 9. GPT-OSS (OpenAI)
+
+- OpenAI’s released gpt-oss-120b and gpt-oss-20b, **their first open-weight models since GPT-2 in 2019**, about one week after I wrote this article. 
+    - Since OpenAI’s open-weight models have been so widely anticipated, I updated this article to include them. I will keep this section brief, but I have written another, much more detailed article dedicated to the gpt-oss models here:
+
+- Before summarizing the interesting tidbits, let's start with an overview of the two models, gpt-oss-20b and gpt-oss-120b.
+
+- The architecture contains all the familiar components we have seen in other architectures discussed previously. For instance, Figure 27 puts the smaller gpt-oss architecture next to Qwen3 30B-A3B, which is also an MoE model with a similar number of active parameters (gpt-oss has 3.6B active parameters, and Qwen3 30B-A3B has 3.3B).
+
+![](../imgs/06_models/Qwen3_vs_GPT-OSS.png)
+
+- **One aspect not shown in Figure 27 is that gpt-oss uses sliding window attention (similar to Gemma 3, but in every other layer instead of using a 5:1 ratio).**
+
+### 9.1 Width Versus Depth
+
+- Figure 27 shows that gpt-oss and Qwen3 use similar components. But if we look at the two models closely, we see that Qwen3 is a much deeper architecture with its 48 transformer blocks instead of 24.
+
+- On the other hand, gpt-oss is a much wider architecture: An embedding dimension of 2880 instead of 2048. An intermediate expert (feed forward) projection dimension of also 2880 instead of 768
+
+- It's also worth noting that gpt-oss uses twice as many attention heads, but this doesn't directly increase the model's width. **The width is determined by the embedding dimension.**
+
+- Does one approach offer advantages over the other given a fixed number of parameters? 
+    - As a rule of thumb, deeper models have more flexibility but can be harder to train due to instability issues, due to exploding and vanishing gradients (**which RMSNorm and shortcut connections aim to mitigate**).
+    - Wider architectures have the advantage of being faster during inference (with a higher tokens/second throughput) due to better parallelization at a higher memory cost.
+
+- When it comes to modeling performance, there's unfortunately no good apples-to-apples comparison I am aware of (where parameter size and datasets are kept constant) **except for an ablation study in the Gemma 2 paper (Table 9), which found that for a 9B parameter architecture, a wider setup is slightly better than a deeper setup.** Across 4 benchmarks, the wider model achieved a 52.0 average score, and the deeper model achieved a 50.8 average score.
+
+### 9.2 Few Large Versus Many Small Experts
+
+- As shown in Figure 27 above, it's also noteworthy that gpt-oss has a surprisingly small number of experts (32 instead of 128), and only uses 4 instead of 8 active experts per token. However, each expert is much larger than the experts in Qwen3.
+
+- **This is interesting because the recent trends and developments point towards more, smaller models as being beneficial.** This change, at a constant total parameter size, is nicely illustrated in Figure 28 below from the DeepSeekMoE paper.
+
+![](https://substackcdn.com/image/fetch/$s_!kMwd!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F019ead67-6811-4c9d-af7b-4e6b2563ea68_1046x565.png)
+
+- **Notably, unlike DeepSeek's models, neither gpt-oss nor Qwen3 uses shared experts, though.**
+
+### 9.3 Attention Bias and Attention Sinks
+
+- Both gpt-oss and Qwen3 use grouped query attention. The main difference is that gpt-oss restricts the context size via sliding window attention in each second layer, as mentioned earlier.
+
+- However, there's one interesting detail that caught my eye. **It seems that gpt-oss uses bias units for the attention weights**, as shown in Figure 29 below.
+
+![](https://substackcdn.com/image/fetch/$s_!hfZq!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F15ddb1b6-1540-4889-86c5-c54f5918562e_1221x352.png)
+
+- I haven't seen these bias units being used since the GPT-2 days, and they are commonly regarded as redundant. Indeed, I found a recent paper that shows mathematically that this is at least true for the key transformation (k_proj). Furthermore, the empirical results show that there is little difference between with and without bias units (see Figure 30 below).
+
+![](https://substackcdn.com/image/fetch/$s_!vQ5q!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F2fa2e161-ba61-43ab-a17b-5e6eab448699_307x151.png)
+
+- Another detail you may have noticed is the definition of sinks in the code screenshot in Figure 30. In general models, **attention sinks are special "always-attended" tokens placed at the start of the sequence to stabilize attention, which is especially useful in long-context scenarios.** 
+    - I.e., if the context gets very long, this special attended token at the beginning is still attended to, and it can learn to store some generally useful information about the entire sequence. (I think it was originally proposed in the [Efficient Streaming Language Models with Attention Sinks](https://arxiv.org/pdf/2309.17453) paper.)
+
+- **In the gpt-oss implementation, attention sinks are not actual tokens in the input sequence. Instead, they are learned per-head bias logits that are appended to the attention scores (Figure 31). The goal is the same as with the above-mentioned attention sinks, but without modifying the tokenized inputs.**
+
+![](../imgs/06_Attention_Sinks_in_GPT-OSS.png)
+
+---
+
+## 10. Grok 2.5 (xAI)
+
+- A few weeks after this article first went online, xAI released the weights of their 270B-parameter Grok 2.5 model.
+
+- I thought it would be worth including here, since **Grok 2.5 was xAI's flagship production model last year.** Up to this point, all models we discussed were released as open-weight models from the start. For example, gpt-oss is likely not an open-weight clone of GPT-4 but rather a custom model trained specifically for the open-source community.
+
+- **With Grok 2.5, we get a rare look at a real production system, even if it is last year's.**
+
+- **Architecturally, Grok 2.5 looks fairly standard overall (Figure 32), but there are a few noteworthy details.**
+
+![](../imgs/06_models/Qwen3_vs_Grok2.5.png)
+
+- For instance, Grok 2.5 uses a small number of large experts (eight), which reflects an older trend. As discussed earlier, more recent designs such as those in the DeepSeekMoE paper favor a larger number of smaller experts (this is also present in Qwen3).
+
+- Another interesting choice is the use of what amounts to a shared expert. The additional SwiGLU module shown on the left in Figure 32 functions as an always-on, shared expert. **It is not identical to the classic shared-expert design since its intermediate dimension is doubled, but the idea is the same. (I still find it interesting that Qwen3 omitted shared experts, and it will be interesting to see if that changes with Qwen4 and later models.)**
+
+---
+
+## 11. GLM-4.5 (Zhipu AI)
+
+- GLM-4.5 is another major release this year.
+
+- It is an instruction/reasoning hybrid similar to Qwen3, but even better optimized for function calling and agent-style contexts.
+
+- As shown in Figure 34, GLM-4.5 comes in two variants. The flagship 355-billion-parameter model **outperforms Claude 4 Opus** on average across 12 benchmarks and trails only **slightly behind OpenAI’s o3 and xAI’s Grok 4**. There is also GLM-4.5-Air, a more compact 106-billion-parameter version that delivers performance only marginally below the 355-billion model.
+
+![](../imgs/06_models/Qwen3_vs_GLM4.5.png)
+
+- The designs are largely similar, but GLM-4.5 adopts a structural choice first introduced by DeepSeek V3: 
+    - **3 dense layers precede the Mixture-of-Experts (MoE) blocks.** 
+    - Why? **Starting with several dense layers improves convergence stability and overall performance in large MoE systems. If MoE routing is introduced immediately, the instability of sparse expert selection can interfere with early syntactic and semantic feature extraction.**
+    - So, one might say that by keeping the initial layers dense ensures the model forms stable low-level representations before routing decisions begin to shape higher-level processing.
+
+- Also, GLM-4.5 uses a shared expert similar to DeepSeek V3 (and unlike Qwen3).
+- Interestingly, GLM-4.5 also retains the attention bias mechanism used in GPT-2 and gpt-oss.
+
+---
+
+## 12. Qwen3-Next (Alibaba Cloud)
+
+- On 11 September 2025, the Qwen3 team released Qwen3 Next 80B-A3B (Figure 35), available in both Instruct and Thinking variants. While its design builds on the previously discussed Qwen3 architecture, I included it here as a separate entry to keep the figure numbering consistent and to draw attention to some of its design changes.
+
+### 12.1 Expert Size and Number
+
+- The new Qwen3 Next architecture stands out because, despite being **3× smaller** than the previous 235B-A22B model (Figure 35), it introduces four times as many experts and even adds a shared expert. 
+    - Both of these design choices (a high expert count and the inclusion of a shared expert) were future directions I had highlighted prior to this release, particularly in the video version of the article that I linked at the top.
+
+### 12.2 Gated DeltaNet + Gated Attention Hybrid
+
+- **The other highlight is that they replace the regular attention mechanism by a Gated DeltaNet + Gated Attention hybrid**, which helps enable the native 262k token context length in terms of memory usage (the previous 235B-A22B model model supported 32k natively, and 131k with YaRN scaling.)
+
+- So how does this new attention hybrid work? Compared to grouped‑query attention (GQA), which is still standard scaled dot‑product attention (sharing K/V across query‑head groups to cut KV‑cache size and memory bandwidth as discussed earlier but whose decode cost and cache still grow with sequence length), their hybrid mechanism mixes Gated DeltaNet blocks with Gated Attention blocks with in a 3:1 ratio as shown in Figure 36.
+
+![](../imgs/06_Gated_DeltaNet_+_Gated_Attention.png)
+
+- We can think of the gated attention block as standard scaled-dot-product attention that can be used in GQA, but it has a few tweaks on top. The main differences between gated attention and plain GQA block are:
+    - an output gate (sigmoid-controlled, usually per-channel) that scales the attention result before it is added back to the residual;
+    - zero-centered RMSNorm for QKNorm, rather than a standard RMSNorm;
+    - partial RoPE (on a subset of dimensions).
+
+- Note that these are **essentially just stability changes to GQA.**
+
+- The Gated DeltaNet is a more significant change. In the DeltaNet block, $q, k, v$ and two gates $(\alpha, \beta)$ are produced by linear and lightweight convolutional layers with normalization, and the layer replaces attention with a fast‑weight delta rule update.
+
+- However, the tradeoff is that DeltaNet offers less precise content‑based retrieval than full attention, which is why one gated attention layer remains.
+
+- Given that attention grows quadratically, the DeltaNet component was added to help with memory efficiency. **In the "linear-time, cache-free" family, the DeltaNet block is a essentially an alternative to Mamba.** 
+    - **Mamba keeps a state with a learned state-space filter (essentially a dynamic convolution over time).**
+    - DeltaNet keeps a tiny fast-weight memory updated with $\alpha$ and $\beta$ and reads it with $q$, with small convolutions only used only to help form $q, k, v, \alpha, \beta$.
+
+### 12.3 Multi-Token Prediction
+
+- The two subsections above describe two design decisions geared towards efficiency. Since all good things come in threes, the Qwen3 also adds another efficiency-technique on top: Multi-Token Prediction (MTP).
+
+- Note that DeepSeek V3 & V3.2, and later GLM-4.5 and MiniMax-M2 all use MTP during training; however, since it’s a training technique, I haven’t explicitly discussed it in the architecture comparisons.
+
+- Multi-token prediction trains the LLM to predict several future tokens, instead of a single one, at each step. Here, at each position $t$, small extra heads (linear layers) output logits for $t+1 ... t+k$, and we sum cross-entropy losses for these offsets (in the MTP paper the researchers recommended $k=4$). This additional signal speeds up training, and inference may remain at generating one token at a time. However, the extra heads can be used in speculative multi-token decoding, which is what Qwen3-Next seems to do, however, the details are still a bit sparse:
+    - Qwen3-Next introduces a native Multi-Token Prediction (MTP) mechanism, which not only yields an MTP module with a high acceptance rate for Speculative Decoding but also enhances the overall performance. Additionally, Qwen3-Next specifically optimizes the multi-step inference performance of MTP, further improving the acceptance rate of Speculative Decoding in real scenarios through multi-step training that maintains consistency between training and inference. Souce: Qwen3-Next blog post
+
+### 12.4 Qwen3-Coder-Next
+
+- In early February 2026, the Qwen3 team shared the 80B Qwen3-Coder-Next model (3B parameters active), which made big headlines for outperforming much larger models like DeepSeek V3.2 (37B active) and Kimi K2.5 and GLM-7.5 (both 32B active) on coding tasks.
+
+- Moreover, the Qwen3-Coder-Next SWE-Bench Pro Performance is roughly on par with Claude-Sonnet-4.5 (and only slightly below Claude-Opus-4.5), which is impressive for an open-weight model!
+
+- Note that the architecture behind Qwen3-Coder-Next is exactly the same as Qwen3-Next 80B, which we discussed above (in fact, they used Qwen3-Next as a base model to train Qwen3-Coder-Next. Since this is an article about LLM architectures, the training details are outside the scope. However, interested readers can find more information in their detailed technical report on GitHub.)
+
