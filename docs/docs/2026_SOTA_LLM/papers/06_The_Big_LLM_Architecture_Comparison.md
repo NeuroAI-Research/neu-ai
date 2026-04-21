@@ -512,3 +512,115 @@
 
 - Note that the architecture behind Qwen3-Coder-Next is exactly the same as Qwen3-Next 80B, which we discussed above (in fact, they used Qwen3-Next as a base model to train Qwen3-Coder-Next. Since this is an article about LLM architectures, the training details are outside the scope. However, interested readers can find more information in their detailed technical report on GitHub.)
 
+---
+
+## 13. (skip) MiniMax-M2
+
+## 14. (skip) Kimi Linear (Moonshot AI)
+
+## 15. (skip) Olmo 3 (Allen Institute for AI)
+
+## 16. DeepSeek V3.2
+
+- This article started with DeepSeek V3, which was released back in December 2024. There have been multiple DeepSeek releases back then, but I largely skipped them as they were not big flagship-model releases like DeepSeek V3 and DeepSeek R1.
+
+- **However, DeepSeek V3.2 was a really big release as it is on par with the current GPT-5.1 and Gemini 3.0 Pro models on certain benchmarks.**
+
+- **The architecture is overall similar to DeepSeek V3 but they added a sparse attention mechanism to improve efficiency.**
+
+![](../imgs/06_models/DeepSeekV3.2.png)
+
+- I originally planned to write a short section about DeepSeek V3.2 for this article, but it turned into a >5000 word write-up, [so I moved it to a separate article](https://magazine.sebastianraschka.com/p/technical-deepseek)
+
+## 17. (skip) Mistral 3
+
+## 18. Nemotron 3 (NVIDIA)
+
+- This article is not an exhaustive list of all LLMs out there. To keep it manageable, I am focusing on the main highlights. Here, “highlights” means that they are either very popular, perform very well, or have an interesting architecture component.
+
+- That being said, it’s time to finally add one of NVIDIA’s models to this list. NVIDIA just released their newest entry in the Nemotron series, Nemotron 3, on December 15th, 2025. What’s nice about Nemotron is, is that it doesn’t come with just the open weights and a technical report, **but NVIDIA also shares the dataset and training code similar to Olmo 3.**
+
+- According to the announcement article, Nemotron 3 comes in three sizes: Nano (30B-A3B), Super (100B), (later, this was updated to 120B, see section 18.1) and Ultra (500B).
+
+### 18.1 Nemotron 3 Nano
+
+- Architecture-wise, the models are a Mixture-of-Experts (MoE) **Mamba-Transformer hybrid architecture.** As of this writing (Dec 17), only the Nano model has been released as open-weight model, so the discussion below will focus on it, as illustrated in the figure below.
+
+![](../imgs/06_Transformer-Mamba_hybrid.png)
+
+- As illustrated above, Nemotron 3 Nano (30B-A3B) is a 52-layer hybrid Mamba-Transformer model that interleaves Mamba-2 sequence-modeling blocks with sparse Mixture-of-Experts (MoE) feed-forward layers, and uses self-attention only in a small subset of layers.
+
+- There’s a lot going on in the figure above, but in short, the architecture is organized into 13 macro blocks with repeated Mamba-2 → MoE sub-blocks, plus a few Grouped-Query Attention layers. In total, if we multiply the macro- and sub-blocks, there are 52 layers in this architecture
+
+- Regarding the MoE modules, each MoE layer contains 128 experts but activates only 1 shared and 6 routed experts per token.
+
+- **The Mamba-2 layers would take a whole article itself to explain** (perhaps a topic for another time). **But for now, conceptually, you can think of them as similar to the Gated DeltaNet approach that Qwen3-Next and Kimi-Linear use**, which I introduced above. You can also read more about it in my other [Beyond Standard LLMs article](https://magazine.sebastianraschka.com/p/beyond-standard-llms)
+
+- **The similarity between Gated DeltaNet and Mamba-2 layers is that both replace standard attention with a gated-state-space update. The idea behind this state-space-style module is that it maintains a running hidden state and mixes new inputs via learned gates. In contrast to attention, it scales linearly instead of quadratically with the input sequence length.**
+
+- What’s actually quite exciting about this architecture is its **really good performance compared to pure transformer architectures of similar size, while achieving much higher tokens-per-second throughput.**
+
+- Overall, this is an interesting direction, even more extreme than Qwen3-Next and Kimi-Linear in its use of only a few attention layers. **However, one of the strengths of the transformer architecture is its performance at a (really) large scale.** I am curious to see how Nemotron 3 Super and especially Ultra will compare to the likes of DeepSeek V3.2.
+
+### 18.2 Nemotron 3 Super
+
+- On March 11, 2026, NVIDIA now also released the 120B Super version as open-weight models on the Hugging Face Hub alongside a nice new “Super”-focused technical report.
+
+- Compared to the Nano model, besides scaling the architecture, there are two main modifications to the architecture.
+
+- First Nemotron 3 Super uses **Multi-Token Prediction (MTP), which is a technique that trains the LLM to predict multiple future tokens at each step, rather than a single one.**
+    - Instead of training the model only with the standard next-token objective, MTP also trains it to predict multiple future token offsets from the same position. This provides a richer training signal and, according to the Super report, **improves both modeling quality and inference efficiency.**
+
+![](../imgs/06_MTP_Multi-Token_Prediction.png)
+
+- A key difference from the standard uses of MTP (which I've drawn in figure 51.2 above) is that Nemotron 3 Super does not use it only during training.
+
+- **The Nemotron 3 Super explicitly uses MTP at inference time as well, where the shared-weight MTP head acts as an internal draft model for native speculative decoding. During generation, the model can then propose candidate continuations and then verify them with the main model. This reduces inference latency without needing a separate external draft model.**
+
+- Since this is not quite standard MTP, it is perhaps more accurate to describe Nemotron 3 Super as using shared-weight MTP for speculative decoding than to call it something like “MTP-3” like in other architectures (like Step 3.5 Flash, which I covered here).
+
+- The second main difference compared to Nano is that the Super architecture uses **latent experts, meaning that the experts operate in latent space (the inputs to the MoE layer are down-projected from 4096 to 1024 dimensions, the experts are applied, and then the outputs are up-projected back from 1024 to 4096 dimensions.)**
+
+![](../imgs/06_latent_MoE.png)
+
+- Benchmark-wise Nemotron 3 Super is on par with Qwen3.5 122B-A10B and GPT-OSS 120B, but the throughput, thanks to the aforementioned “tricks” (MTP, latent MoE, and hybrid attention) is great: 2x faster than Qwen3.5 122B-A10B and (regarding the NVFP4 version) 2.2x faster than GPT-OSS 120B.
+
+## 19. (skip) MiMo-V2-Flash (Xiaomi)
+
+## 20. (skip) Trinity Large (Arcee AI)
+
+## 21. (skip) GLM-5 (Zhipu AI)
+
+## 23. Gemma 4 (Google DeepMind)
+
+- After the Nemotron 3 Super release in March, the rest of the month was relatively quiet for flagship open-weight model releases. While I am still waiting for DeepSeek-V4, April at least brought us Google’s Gemma 4.
+
+- Architecture-wise, Gemma 4 (31B) looks pretty much unchanged compared to Gemma 3 (27B), as illustrated in the figure below.
+
+![](../imgs/06_models/Gemma3_vs_Gemma4.png)
+
+- (Note that Gemma 4 also has multimodal model support now, but I will leave the image encoder part for a separate article in the future; here, we only focus on the text portion.)
+
+- As we can see in the figure above, 
+    - Gemma 4 maintains a relatively unique Pre- and Post-norm setup and remains relatively classic, 
+    - with a 5:1 hybrid attention mechanism combining a sliding-window (local) layer and a full-attention (global) layer. 
+    - The attention mechanism itself is also classic Grouped Query Attention (GQA).
+
+- However, a small change over Gemma 3, which is easy to overlook, is that 
+    - for the global (full) attention layers they reuse the keys in the attention mechanism. I.e., **they set values = keys**, which should result in further KV cache size reduction.
+
+- Furthermore, Gemma 4 also uses **p-RoPE, where only 25% of the frequency pairs get positional information. This helps with reducing positional noise in long-context situations.**
+
+- **But let’s not be fooled by the lack of big(ger) architectural changes. Looking at the benchmarks, Gemma 4 is a huge leap from Gemma 3!** 
+    - For instance, on the AI Arena Leaderboard, Gemma 4 (31B) ranks similarly to the much larger Qwen3.5-397B-A17B model. But as I discussed in my model evaluation article (linked below), arena scores are a bit problematic as they can be gamed and are biased towards human (style) preference.
+
+- However, if we look at some other common benchmarks, which I plotted below, we can see that it’s indeed a very clear leap over Gemma 3 and ranks on par with Qwen3.5 27B.
+
+- **Note that there is also a Mixture-of-Experts (MoE) Gemma 4 variant**, which is illustrated below next to a Qwen3 model of similar size.
+
+![](../imgs/06_models/Qwen3_vs_Gemma4_MoE.png)
+
+- As the figure above shows, the approaches are relatively similar except that Gemma 4 uses the unique Pre- and Post-norm placement discussed earlier.
+
+- Benchmark-wise, the Gemma 4 MoE variant, which has 4B parameters less in total than the Gemma 4 (31B) dense variant, the performances are relatively similar.
+
