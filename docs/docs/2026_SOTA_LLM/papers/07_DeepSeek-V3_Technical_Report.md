@@ -259,7 +259,9 @@ We employ a rule-based Reward Model (RM) and a model-based RM in our RL process.
 
 #### 5.2.2. Group Relative Policy Optimization
 
-- Similar to DeepSeek-V2 (DeepSeek-AI, 2024c), we adopt Group Relative Policy Optimization (GRPO) (Shao et al., 2024), which foregoes the critic model that is typically with the same size as the policy model, and estimates the baseline from group scores instead. 
+- Similar to DeepSeek-V2 (DeepSeek-AI, 2024c), we adopt Group Relative Policy Optimization (GRPO) (Shao et al., 2024), which **REMOVES the critic model from PPO that is typically with the same size as the policy model, and estimates the baseline (boxed) from group scores instead.** 
+    - In PPO: The baseline is an absolute estimate of "how good is this state?" provided by the Critic.
+    - In GRPO: The baseline is simply the average reward of that specific group. An output is considered "good" (positive advantage) only if it performs better than its "siblings" generated for the same prompt.
     - Specifically, for each question $q$, GRPO samples a group of outputs $\{o_1, ... , o_G\}$ from the old policy model $\pi_{\theta_\text{old}}$ and then optimizes the policy model $\pi_\theta$ by maximizing the following objective:
     - $\pi_{ref}$: the reference model. $A_i$: advantage. $\{r_i\}_{i=1}^G$: rewards
 
@@ -269,7 +271,7 @@ E[ q \sim P(Q), \{o_i\}_{i=1}^G \sim \pi_{\theta_\text{old}} (O|q) ] \\
 {1\over G} \sum_{i=1}^G ( L_\text{PPO} - \beta D_{KL} ( \pi_\theta || \pi_{ref} ) ) \\[5pt]
 L_\text{PPO} = \min( R_i A_i, \text{clip}(R_i, 1-\epsilon, 1+\epsilon) A_i ) \\[5pt]
 R_i = { \pi_\theta (o_i | q) \over \pi_{\theta_\text{old}} (o_i|q) }
-\qquad A_i = { r_i - \text{mean}( \{r_i\} ) \over \text{std}(\{r_i\}) } \\[5pt]
+\qquad A_i = { r_i - \boxed{\text{mean}( \{r_i\} )} \over \text{std}(\{r_i\}) } \\[5pt]
 D_{KL} ( \pi_\theta || \pi_{ref} ) = R_{KL} - \log R_{KL} - 1 \qquad
 R_{KL} = { \pi_{ref}(o_i | q) \over \pi_\theta(o_i | q) }
 $$
