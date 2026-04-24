@@ -1,8 +1,10 @@
 import jax.numpy as jnp
+import optax
 import tiktoken
 from flax import nnx
-from jax import Array
+from jax import Array, random
 from jax.nn import gelu, softmax
+from jax.random import PRNGKey, categorical
 
 
 class LLMConf:
@@ -16,6 +18,7 @@ class LLMConf:
 
     dropout = 0.1
     rngs = nnx.Rngs(0)
+    mask = None
 
 
 def to_batch(seq, T):
@@ -42,7 +45,7 @@ class TextEmbed(nnx.Module):
         return token_vec + pos_vec
 
     def undo(s, x: Array):
-        W = s.token_embed.embedding
+        W: Array = s.token_embed.embedding
         return x @ W.T
 
 
@@ -65,14 +68,15 @@ class MultiHeadAttention(nnx.Module):
         B, n_head, T, d_head = x.shape
         return x.transpose(0, 2, 1, 3).reshape(B, T, n_head * d_head)
 
-    def __call__(s, x: Array, mask=None):
+    def __call__(s, x: Array):
+        T = x.shape[1]
         q, k, v = s.WQ(x), s.WK(x), s.WV(x)
         q, k, v = map(s.split_heads, [q, k, v])
         # (B, n_head, T, d_head) @ (B, n_head, d_head, T) -> (B, h_head, T, T)
         qk = jnp.matmul(q, k.transpose(0, 1, 3, 2))
         qk = qk / jnp.sqrt(s.d_head)
-        if mask is not None:
-            qk = qk + (mask * -1e9)
+        if s.c.mask is not None:
+            qk = qk + (s.c.mask[:T, :T] * -1e9)
         context = jnp.matmul(softmax(qk, axis=-1), v)
         return s.WO(s.unsplit_heads(context))
 
@@ -86,24 +90,22 @@ class TransformerBlock(nnx.Module):
         s.norm2 = nnx.LayerNorm(c.d_model, rngs=c.rngs)
         s.dropout = nnx.Dropout(c.dropout, rngs=c.rngs)
 
-    def __call__(s, x: Array, mask=None):
+    def __call__(s, x: Array):
         # Pre-LayerNorm: more stable gradients than the original Post-LayerNorm
-        x = x + s.dropout(s.attention(s.norm1(x), mask))
+        x = x + s.dropout(s.attention(s.norm1(x)))
         x = x + s.dropout(s.W2(gelu(s.W1(s.norm2(x)))))
         return x
 
 
 class LLM(nnx.Module):
     def __init__(s, c: LLMConf):
+        s.c = c
         s.embed = TextEmbed(c)
-        s.blocks = nnx.List([TransformerBlock(c) for _ in range(c.n_layer)])
+        s.blocks = nnx.Sequential(*[TransformerBlock(c) for _ in range(c.n_layer)])
         s.norm = nnx.LayerNorm(c.d_model, rngs=c.rngs)
 
-    def __call__(s, x: Array, mask=None):
-        x = s.embed(x)
-        for block in s.blocks:
-            x = block(x, mask)
-        return s.embed.undo(s.norm(x))
+    def __call__(s, x: Array):
+        return s.embed.undo(s.norm(s.blocks(s.embed(x))))
 
 
 def main():
@@ -111,15 +113,58 @@ def main():
     with open(path) as f:
         txt = f.read()
 
-    bpe = tiktoken.encoding_for_model("gpt-4o")
-    tokens = to_batch(bpe.encode(txt), 100)
+    bpe = tiktoken.encoding_for_model("gpt2")
+    tokens = to_batch(bpe.encode(txt), 10)[:3]
+    x = tokens[:, :-1]
+    y = tokens[:, 1:]
 
     c = LLMConf()
     c.n_vocab = bpe.n_vocab
+    c.mask = causal_mask(c.max_T)
 
     llm = LLM(c)
-    x = llm(tokens)
-    print(x.shape)
+    logits = llm(x)
+    print(logits.shape)
+
+    lr_sch = optax.warmup_cosine_decay_schedule(
+        init_value=0.0,
+        peak_value=1e-3,
+        warmup_steps=50,
+        decay_steps=500,
+        end_value=1e-5,
+    )
+    opt = nnx.Optimizer(llm, optax.adamw(lr_sch), wrt=nnx.Param)
+
+    def loss_fn(llm: LLM, x: Array, y: Array):
+        logits = llm(x)
+        loss = optax.softmax_cross_entropy_with_integer_labels(logits, y)
+        return loss.mean()
+
+    @nnx.jit
+    def train_step(llm, opt: nnx.Optimizer, x, y):
+        grad_fn = nnx.value_and_grad(loss_fn)
+        loss, grad = grad_fn(llm, x, y)
+        opt.update(llm, grad)
+        return loss
+
+    for i in range(501):
+        loss = train_step(llm, opt, x, y)
+        if i % 10 == 0:
+            print(f"step {i}: {loss}")
+
+    def generate(s: LLM, idx: Array, max_num=10, temperature=1.0):
+        s.eval()
+        key = PRNGKey(0)
+        for _ in range(max_num):
+            logits = s(idx[:, -s.c.max_T :])
+            logits = logits[:, -1, :] / temperature
+            key, k2 = random.split(key)
+            next_idx = categorical(k2, logits)
+            idx = jnp.concat([idx, next_idx[:, None]], axis=1)
+        return idx
+
+    idx = generate(llm, x[:1, :3])
+    print({"in": bpe.decode(x[0, :3].tolist()), "out": bpe.decode(idx[0].tolist())})
 
 
 if __name__ == "__main__":
