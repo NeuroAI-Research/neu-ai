@@ -8,17 +8,16 @@ from jax.random import PRNGKey, categorical
 
 
 class LLMConf:
-    max_T: int = 1000
     n_vocab: int
+    mask: Array
+
+    max_T: int = 1000
     n_head: int = 8
     n_layer: int = 3
-
     d_model: int = 64
     d_ff: int = 64
-
     dropout = 0.1
     rngs = nnx.Rngs(0)
-    mask = None
 
 
 def to_batch(seq, T):
@@ -27,6 +26,12 @@ def to_batch(seq, T):
 
 
 def causal_mask(T):
+    """
+    causal_mask(3):
+        [[0. 1. 1.]
+        [0. 0. 1.]
+        [0. 0. 0.]]
+    """
     return jnp.triu(jnp.ones((T, T)), k=1)
 
 
@@ -72,7 +77,7 @@ class MultiHeadAttention(nnx.Module):
         T = x.shape[1]
         q, k, v = s.WQ(x), s.WK(x), s.WV(x)
         q, k, v = map(s.split_heads, [q, k, v])
-        # (B, n_head, T, d_head) @ (B, n_head, d_head, T) -> (B, h_head, T, T)
+        # (B, n_head, T, d_head) @ (B, n_head, d_head, T) -> (B, n_head, T, T)
         qk = jnp.matmul(q, k.transpose(0, 1, 3, 2))
         qk = qk / jnp.sqrt(s.d_head)
         if s.c.mask is not None:
@@ -108,13 +113,41 @@ class LLM(nnx.Module):
         return s.embed.undo(s.norm(s.blocks(s.embed(x))))
 
 
+# ======================
+
+
+def cross_entropy(model: nnx.Module, x, y):
+    logits = model(x)
+    loss = optax.softmax_cross_entropy_with_integer_labels(logits, y)
+    return loss.mean()
+
+
+@nnx.jit
+def opt_step(opt: nnx.Optimizer, model, x, y):
+    grad_fn = nnx.value_and_grad(cross_entropy)
+    loss, grad = grad_fn(model, x, y)
+    opt.update(model, grad)
+    return loss
+
+
+def generate(s: LLM, idx: Array, max_num=10, temperature=1.0, key=PRNGKey(0)):
+    s.eval()
+    for _ in range(max_num):
+        logits = s(idx[:, -s.c.max_T :])
+        logits = logits[:, -1, :] / temperature
+        key, k2 = random.split(key)
+        next_idx = categorical(k2, logits)
+        idx = jnp.concat([idx, next_idx[:, None]], axis=1)
+    return idx
+
+
 def main():
     path = "../docs/docs/2026_SOTA_LLM/papers/01_Attention_Is_All_You_Need.md"
     with open(path) as f:
         txt = f.read()
 
     bpe = tiktoken.encoding_for_model("gpt2")
-    tokens = to_batch(bpe.encode(txt), 10)[:3]
+    tokens = to_batch(bpe.encode(txt), T=10)[:3]
     x = tokens[:, :-1]
     y = tokens[:, 1:]
 
@@ -135,36 +168,14 @@ def main():
     )
     opt = nnx.Optimizer(llm, optax.adamw(lr_sch), wrt=nnx.Param)
 
-    def loss_fn(llm: LLM, x: Array, y: Array):
-        logits = llm(x)
-        loss = optax.softmax_cross_entropy_with_integer_labels(logits, y)
-        return loss.mean()
-
-    @nnx.jit
-    def train_step(llm, opt: nnx.Optimizer, x, y):
-        grad_fn = nnx.value_and_grad(loss_fn)
-        loss, grad = grad_fn(llm, x, y)
-        opt.update(llm, grad)
-        return loss
-
     for i in range(501):
-        loss = train_step(llm, opt, x, y)
+        loss = opt_step(opt, llm, x, y)
         if i % 10 == 0:
             print(f"step {i}: {loss}")
 
-    def generate(s: LLM, idx: Array, max_num=10, temperature=1.0):
-        s.eval()
-        key = PRNGKey(0)
-        for _ in range(max_num):
-            logits = s(idx[:, -s.c.max_T :])
-            logits = logits[:, -1, :] / temperature
-            key, k2 = random.split(key)
-            next_idx = categorical(k2, logits)
-            idx = jnp.concat([idx, next_idx[:, None]], axis=1)
-        return idx
-
-    idx = generate(llm, x[:1, :3])
-    print({"in": bpe.decode(x[0, :3].tolist()), "out": bpe.decode(idx[0].tolist())})
+    idx1 = x[:1, :3]
+    idx2 = generate(llm, idx1)
+    print({"in": bpe.decode(idx1[0].tolist()), "out": bpe.decode(idx2[0].tolist())})
 
 
 if __name__ == "__main__":
