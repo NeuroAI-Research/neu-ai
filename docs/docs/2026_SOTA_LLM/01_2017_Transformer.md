@@ -154,3 +154,25 @@ $$ q_m^\top k_n = (R_{\Theta, m} q)^\top (R_{\Theta, n} k) = q^\top (R_{\Theta, 
     
     - Mathematically, we **broadcast** (repeat) the $K$ and $V$ heads $S$ times to match the $Q$ count before the dot product.
 
+
+
+
+### 2020 QK-Norm: Query-Key Normalization
+
+- Background
+    - Original idea from the 2020 paper [Query-Key Normalization for Transformers](https://arxiv.org/pdf/2010.04245)
+    - Gained huge popularity in 2024–2025 in models like OLMo, Qwen, Llama variants, MiniMax, etc.
+    - It's one of those "tiny change, massive impact" upgrades — basically mandatory now for stable large-scale training.
+
+- In standard attention, the dot product $QK^T$ can grow very large as $d_{head}$ increases. Since `Softmax` is an exponential function, large input values lead to extreme "peaky" distributions where one token gets 99.9% of the attention. This "saturates" the gradients (making them near zero).
+
+- **QK-Norm** changes the attention score calculation to:
+
+$$ \text{Attention} = \text{Softmax}\left( \frac{\text{RMSNorm}(Q) \cdot \text{RMSNorm}(K)^T}{\sqrt{d_{head}}} \right) V $$
+
+- By forcing the $Q$ and $K$ vectors to lie on a hypersphere (fixed radius) before the dot product, you ensure that the logit values remain within a predictable, stable range, regardless of how the weights are initialized or how much training has progressed.
+
+- **The Science**
+    - **Entropy Maintenance:** It prevents "entropy collapse," where the model becomes too certain about its attention early on and stops learning new relationships.
+    - **Precision Stability:** In FP16 or BF16 training, exploding attention logits often cause numerical overflow (`Inf`). QK-Norm keeps values small, making it essential for low-precision 2026 training regimes.
+    - **Magnitude/Direction Separation:** It forces the model to learn relationships based on the **angle** (semantic direction) between tokens rather than the raw **magnitude** of the activations.

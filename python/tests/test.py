@@ -91,6 +91,8 @@ class GroupedQueryAttention(nnx.Module):
         s.WK = c.linear(c.d_model, c.n_kv_head * s.d_head)
         s.WV = c.linear(c.d_model, c.n_kv_head * s.d_head)
         s.WO = c.linear(c.d_model, c.d_model)
+        s.q_norm = RMSNorm((c.n_head, 1, s.d_head))
+        s.k_norm = RMSNorm((c.n_kv_head, 1, s.d_head))
 
     def split_heads(s, x: Array):
         B, T, d_model = x.shape
@@ -108,9 +110,10 @@ class GroupedQueryAttention(nnx.Module):
         B, T, d_model = x.shape
         q, k, v = s.WQ(x), s.WK(x), s.WV(x)
         q, k, v = map(s.split_heads, (q, k, v))
-        # (B, n_head, T, d_head) @ (B, n_head, d_head, T) -> (B, n_head, T, T)
+        q, k = s.q_norm(q), s.k_norm(k)
         q, k = map(s.c.roPE, (q, k))
         k, v = map(s.repeat_kv, (k, v))
+        # (B, n_head, T, d_head) @ (B, n_head, d_head, T) -> (B, n_head, T, T)
         qk = jnp.matmul(q, k.transpose(0, 1, 3, 2)) / jnp.sqrt(s.d_head)
         if s.c.mask is not None:
             qk = jnp.where(s.c.mask[:T, :T], -jnp.inf, qk)
