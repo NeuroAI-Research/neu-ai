@@ -15,6 +15,7 @@ dependencies = [
     "torchvision",
     "accelerate",
     "tiktoken",
+    "brainglobe-atlasapi",
 ]
 requires-python = ">=3.9"
 

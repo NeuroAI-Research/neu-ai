@@ -1,4 +1,5 @@
-from typing import Dict
+import json
+from typing import Dict, List
 
 import cv2
 import jax.numpy as jnp
@@ -59,3 +60,41 @@ def gaussian(x, mu, sig):
 
 def SMA(x, T):
     return jnp.convolve(x, jnp.ones(T), "valid") / T
+
+
+def load_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+class Tree:
+    def get_id(s, x: Dict):
+        pass
+
+    def __init__(s, data: List[Dict]):
+        s.map: Dict[str, Dict] = {}
+        for x in data:
+            id, pid, name = s.get_id(x)
+            s.map[id] = {"c": {}, "x": x, "id": id, "pid": pid, "name": name}
+        assert len(data) == len(s.map), "id must be unique"
+        s.root = {"c": {}}
+        for id, x in s.map.items():
+            p = s.map.get(x["pid"], s.root)
+            p["c"][id] = x
+
+    def save(s, path, lim=None, max_lvl=None):
+        lines = []
+
+        def add(root: Dict[str, Dict], level):
+            if max_lvl and level > max_lvl:
+                return
+            space = " " * 4 * level
+            for id, c in root["c"].items():
+                if lim and len(lines) >= lim:
+                    return
+                lines.append(f"{space}{c['name']}{c.get('info', '')}")
+                add(c, level + 1)
+
+        add(s.root, 0)
+        with open(path, "w+") as f:
+            f.write("\n".join(lines))

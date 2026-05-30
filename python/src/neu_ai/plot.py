@@ -1,10 +1,11 @@
 import math
+from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .utils import D_TYPE
+from .utils import D_TYPE, Tree, load_json
 
 
 def plot1(data: D_TYPE, id, sort=False, C=2, bins=200, n_std=3):
@@ -96,3 +97,22 @@ def plot_img_patches(img: np.ndarray, patch_size, id):
     plt.tight_layout()
     plt.savefig(id)
     plt.close()
+
+
+def show_brain_tree(atlas_dir, id="brain.txt"):
+    # from brainglobe_atlasapi import BrainGlobeAtlas
+    # atlas = BrainGlobeAtlas("allen_human_500um")
+    class Brain(Tree):
+        def get_id(s, x):
+            path: List = x["structure_id_path"]
+            id = path[-1]
+            pid = path[-2] if len(path) >= 2 else None
+            name = x["name"]
+            return id, pid, name
+
+    data = load_json(f"{atlas_dir}/structures.json")
+    brain = Brain(data)
+    brain.save(id)
+
+    leaf_nodes = [x for x in brain.map.values() if len(x["c"]) == 0]
+    print(len(leaf_nodes), "/", len(data))
