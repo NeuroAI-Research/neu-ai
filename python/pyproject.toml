@@ -16,6 +16,10 @@ dependencies = [
     "accelerate",
     "tiktoken",
     "brainglobe-atlasapi",
+    "gymnasium",
+    "mujoco", 
+    "stable-baselines3[extra]",
+    "sb3-contrib",
 ]
 requires-python = ">=3.9"
 
