@@ -1,3 +1,31 @@
+from graphviz import Digraph
+
+
+def get_name(x):
+    return f"{x.__name__}\n{getattr(x, "zh", "")}"
+
+
+def plot_animal(Ani, save_name):
+    g = Digraph(graph_attr={"rankdir": "LR", "label": get_name(Ani)})
+    colors = {"sensors": "red", "nns": "blue", "outputs": "gray"}
+    for key, color in colors.items():
+        for x in getattr(Ani, key, []):
+            name = x.__name__
+            g.node(name, get_name(x), color=color)
+            inputs = getattr(x, "inputs", [])
+            outputs = getattr(x, "outputs", [])
+            if isinstance(inputs, list):
+                for y in inputs:
+                    g.edge(y.__name__, name)
+            if isinstance(outputs, list):
+                for y in outputs:
+                    g.edge(name, y.__name__)
+    g.render(save_name, format="svg", cleanup=True)
+
+
+# ========================
+
+
 class Sensor:
     pass
 
@@ -31,7 +59,7 @@ class Statocysts(Sensor):
     function = "重力方向感知, 实现身体在水中的定向; 是最早的前庭感觉器官原型"
 
 
-class PhotoreceptorCells(Sensor):
+class Photoreceptors(Sensor):
     zh = "感光细胞"
     ancestor = None
     inputs = "光强度变化"
@@ -44,7 +72,7 @@ class PhotoreceptorCells(Sensor):
 class DiffuseNerveNet(NN):
     zh = "弥散神经网"
     ancestor = "由化学信号细胞进化为真正神经元, 形成网状连接"
-    inputs = [Mechanoreceptors, Statocysts, PhotoreceptorCells]
+    inputs = [Mechanoreceptors, Statocysts, Photoreceptors]
     outputs = [Muscles]
     function = "分布式感觉-运动整合; 无中央处理中心, 刺激可双向传导; 实现基础逃避反射和捕食反射"
 
@@ -54,7 +82,7 @@ class DiffuseNerveNet(NN):
 
 class Jellyfish(Animal):
     zh = "水母"
-    sensors = [Mechanoreceptors, Statocysts, PhotoreceptorCells]
+    sensors = [Mechanoreceptors, Statocysts, Photoreceptors]
     nns = [DiffuseNerveNet]
     outputs = [Muscles]
 
@@ -64,7 +92,7 @@ class Jellyfish(Animal):
 
 class Eyecups(Sensor):
     zh = "眼杯"
-    ancestor = PhotoreceptorCells
+    ancestor = Photoreceptors
     inputs = "具有方向性的光线 (色素杯阻挡一侧光)"
     function = "方向性光感知 (能辨别光从哪个方向来); 用于趋光/避光行为导航; 是视觉方向计算的起点"
 
@@ -104,3 +132,64 @@ class Planaria(Animal):
     sensors = [Eyecups, Chemoreceptors, Mechanoreceptors]
     nns = [CerebralGanglia, VentralNerveCord]
     outputs = [Muscles]
+
+
+# =============================
+
+
+class Thermoreceptors(Sensor):
+    zh = "热感受器"
+    ancestor = None
+    inputs = "温度变化"
+    function = (
+        "温度梯度检测与记忆: 记住`培养温度`并驱使虫体回到该温度, 是最早的温度记忆计算"
+    )
+
+
+# ----------------------------
+
+
+class PharyngealNerveRing(NN):
+    zh = "咽神经环"
+    ancestor = CerebralGanglia
+    inputs = [Mechanoreceptors, Chemoreceptors]
+    outputs = [Muscles]
+    function = "进食控制回路; 检测食物存在并协调咽部泵吸节律, 与主神经环半独立运行"
+
+
+class CommandInterneurons(NN):
+    zh = "命令中间神经元"
+    ancestor = None
+    inputs = [Mechanoreceptors, Chemoreceptors, Thermoreceptors]
+    function = "多模态感觉整合->行为选择; 是302个神经元中的`决策层`"
+
+
+class MotorInterneurons(NN):
+    zh = "运动中间神经元"
+    ancestor = None
+    inputs = [CommandInterneurons, Mechanoreceptors]
+    function = "前进/后退决策回路"
+
+
+class MotorNeurons(NN):
+    zh = "运动神经元"
+    ancestor = VentralNerveCord
+    inputs = [MotorInterneurons]
+    outputs = [Muscles]
+    function = "蛇形爬行的中央模式发生器(CPG): 背腹肌肉交替收缩产生正弦波运动"
+
+
+# --------------------------
+
+
+class Nematode(Animal):
+    zh = "线虫"
+    sensors = [Mechanoreceptors, Chemoreceptors, Thermoreceptors]
+    nns = [PharyngealNerveRing, CommandInterneurons, MotorInterneurons, MotorNeurons]
+    outputs = [Muscles]
+
+
+# ============================
+
+if __name__ == "__main__":
+    plot_animal(Nematode, "temp")

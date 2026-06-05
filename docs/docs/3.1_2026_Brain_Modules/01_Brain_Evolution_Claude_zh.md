@@ -4,6 +4,8 @@
 
 ---
 
+<!--
+
 - 海绵 (Sponge, Porifera)
     - 化学信号细胞 (Chemosensory cells / Choanocytes)
         - 前身: 无（原始起点）
@@ -109,6 +111,8 @@
         - 计算功能: 多模态感觉整合→行为选择；是302个神经元中的"决策层"
 
 ---
+
+-->
 
 - 环节动物/蚯蚓 (Annelida / Earthworm)
     - 食道上神经节/脑 (Supraesophageal ganglion / "Brain")

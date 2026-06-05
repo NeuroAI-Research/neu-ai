@@ -20,6 +20,7 @@ dependencies = [
     "mujoco", 
     "stable-baselines3[extra]",
     "sb3-contrib",
+    "graphviz",
 ]
 requires-python = ">=3.9"
 
@@ -38,6 +39,7 @@ twine = "*"
 black = "*"
 isort = "*"
 flake8 = "*"
+graphviz = "*"
 
 [tool.pixi.pypi-dependencies]
 neu-ai = { path = ".", editable = true }
