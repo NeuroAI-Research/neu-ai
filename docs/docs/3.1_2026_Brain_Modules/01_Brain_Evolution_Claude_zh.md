@@ -112,7 +112,6 @@
 
 ---
 
--->
 
 - 环节动物/蚯蚓 (Annelida / Earthworm)
     - 食道上神经节/脑 (Supraesophageal ganglion / "Brain")
@@ -211,6 +210,8 @@
         - 计算功能: 腹部运动控制；产卵行为的局部控制
 
 ---
+
+-->
 
 - 原始脊椎动物/七鳃鳗 (Primitive vertebrate / Lamprey, Petromyzontida)
     - 延髓 (Medulla oblongata / Myelencephalon)
