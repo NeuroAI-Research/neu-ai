@@ -98,3 +98,27 @@ class Tree:
         add(s.root, 0)
         with open(path, "w+") as f:
             f.write("\n".join(lines))
+
+
+class Memory:
+    def __init__(s, size):
+        s.size = size
+
+    def save(s, values: List[np.ndarray]):
+        if not hasattr(s, "mem"):
+            s.mem: List[np.ndarray] = []
+            s.cnt = 0
+            for v in values:
+                v_shape = (1,) if np.isscalar(v) else v.shape
+                s.mem.append(np.zeros((s.size, *v_shape), dtype=np.float32))
+        ptr = s.cnt % s.size
+        for i, v in enumerate(values):
+            s.mem[i][ptr] = v
+        s.cnt += 1
+
+    def sample(s, num):
+        if num > s.cnt:
+            return
+        max_idx = min(s.cnt, s.size)
+        idx = np.random.choice(max_idx, size=num, replace=False)
+        return [v[idx] for v in s.mem]
