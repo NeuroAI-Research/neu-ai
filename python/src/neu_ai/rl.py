@@ -49,8 +49,11 @@ class TD_A2C(RLBase):
         d_obs = env.observation_space.shape[0]
         d_act = env.action_space.n
 
+        # BasalGanglia.Striatum.Striosome 基底核.纹状体.小体:
         s.actor = mlp([d_obs, *hidden, d_act])
+        # BasalGanglia.Striatum.Matrix 基底核.纹状体.基质:
         s.critic = mlp([d_obs, *hidden, 1])
+
         s.nets = nn.ModuleList([s.actor, s.critic])
         s.opt = tc.optim.Adam(s.nets.parameters(), lr)
 
@@ -61,6 +64,7 @@ class TD_A2C(RLBase):
         return dist.sample().item()
 
     def step(s):
+        # Hippocampus 海马体:
         mem = s.memory.sample(s.batch_size)
         if mem is not None:
             obs, act, obs2, rew, term = map(tc.from_numpy, mem)
@@ -69,7 +73,9 @@ class TD_A2C(RLBase):
             dist = Categorical(logits=s.actor(obs))
             log_p: tc.Tensor = dist.log_prob(act[:, 0])[:, None]
 
+            # Midbrain.VTA.DopaminergicNeurons 中脑.腹侧被盖区.多巴胺神经元:
             td_err: tc.Tensor = rew + s.gamma * v2 * (1 - term) - v
+
             critic_loss = td_err.pow(2).mean()
             actor_loss = -(log_p * td_err.detach()).mean()
             loss = critic_loss + actor_loss

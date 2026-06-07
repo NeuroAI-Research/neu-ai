@@ -80,7 +80,7 @@
 
 ## THE MODEL
 
-### Breakthrough #1: Steering (转向) in Early Bilaterians (两侧对称动物)
+### 1 Associative Learning: Steering (转向) in Early Bilaterians (两侧对称动物)
 
 - The hypothesis here is that the major neural modifications that emerged in early bilaterians facilitated the breakthrough of "steering," which was thereby applied in multiple adaptive ways, such as in 
     - local area restricted search, 
@@ -123,7 +123,7 @@
     - This breakthrough was only possible because bilaterian brains were built on the foundation of neurons and muscles that evolved prior in eumetazoans (真后生动物).
 
 
-### Breakthrough #2: Reinforcing in Early Vertebrates (脊椎动物)
+### 2 Model-Free RL: Reinforcing in Early Vertebrates (脊椎动物)
 
 - The hypothesis here is that the brain modifications that emerged in early vertebrates facilitated the singular breakthrough of "reinforcing," which was thereby applied in multiple adaptive ways, such as in 
     - map-based navigation, 
@@ -165,7 +165,7 @@
         - However, neither is necessarily the case. If "states" include interoceptive (内感受性的) information such as hunger level, then model-free learning can exhibit behavior that is sensitive to devaluation without any planning or playing out of future actions. 
         - Therefore, the proposal that early vertebrates were capable of model-free RL but not model-based RL does not suggest that all behavior of early vertebrates was habitual and insensitive to devaluation.
 
-![](../imgs/02_model-free_RL.png)
+![](../imgs/02_Model-Free_RL.png)
 
 - The main **four new brain structures** that emerged with early vertebrates were 
     - the pallium (大脑皮层), 
@@ -201,6 +201,38 @@
         - If you experimentally sever the direct pathway from the US to the Motor Neuron, the Motor Neuron will remain completely silent and fail to fire during training.
         - However, because the US $\rightarrow$ Yellow Interneuron pathway remains intact, the neuromodulator is still released. Consequently, the convergence of the CS neurotransmitter and the neuromodulator at the synapse still occurs normally. **Therefore, the $W_{\text{CS} \rightarrow \text{Motor}}$ synapse will still strengthen successfully, proving that post-synaptic firing is a byproduct, not a cause, of this associative learning.**
 
+- Study Note: Vertebrate Reinforcement Learning
+    - Core Principle:
+        - Vertebrate Reinforcement Learning does **not** rely on direct, rigid sensory-to-motor wiring. Instead, it is a **decoupled, model-based system** running an online **Temporal Difference (TD) Actor-Critic algorithm**. The circuit separates the prediction of "state value" from the selection of "motor actions," using **phasic dopamine** as a scalar algebraic error signal ($\delta_t$) to dynamically adjust multi-synaptic weights.
+    - Step 1: State Representation & Space-Time Synthesis
+        - When a Conditioned Stimulus (CS, e.g., a cue) appears in a complex environment, the brain does not treat it as an isolated signal. It builds a high-dimensional state vector ($\mathbf{s}_t$):
+            - **Spatial Cognitive Mapping (Pallium/Cortex):** The Pallium constructs an allocentric, 3D model of the environment, computing the animal's exact spatial coordinates and contextual layout.
+            - **Interval Timing (Cerebellum & Tectum):** Concurrently, the Cerebellum acts as a high-precision internal stopwatch, tracking the exact milliseconds elapsed since the onset of the CS.
+            - **Result:** A unified spatio-temporal state vector $\mathbf{s}_t$ (encoding *"Where I am"* and *"Exactly what millisecond it is"*) is dispatched to the Basal Ganglia.
+    - Step 2: Parallel Dual-Stream Processing (Actor vs. Critic)
+        - The state vector $\mathbf{s}_t$ enters the Striatum (the input hub of the Basal Ganglia), where it splits into two completely independent, parallel anatomical pathways:
+            1. **The Critic Stream (Striatum Matrix):** This pathway calculates the **State-Value Function $V(\mathbf{s}_t)$**. It answers the question: *"Based on this current situation and time, what is the total amount of reward I expect to receive in the future?"*
+            2. **The Actor Stream (Striatum Striosome):** This pathway encodes the **Policy $\pi(a|\mathbf{s}_t)$** by calculating action preferences. It decides which motor plans to prepare but keeps them under lock and key via a structural **motor gate**.
+    - Step 3: Computational Auditing via Dopamine (TD-RPE Calculation)
+        - The animal executes an action $a_t$ sampled from its policy, shifting the world to a new state $\mathbf{s}_{t+1}$, which might yield an Unconditioned Stimulus (US, e.g., food reward $R_t$).
+        - At this exact transition, the Midbrain Dopamine Neurons (the yellow node) act as an algebraic differentiator, calculating the **Temporal Difference Reward Prediction Error ($\delta_t$)**:
+
+        $$\delta_t = R_t + \gamma V(\mathbf{s}_{t+1}) - V(\mathbf{s}_t)$$
+
+        - **The Dopamine Phasic Burst ($\delta_t > 0$):** If the reward $R_t$ is higher than expected, or if the new state looks more promising than the last, dopamine neurons fire a massive burst, flooding the Basal Ganglia with a wave of dopamine.
+        - **The Dopamine Pause ($\delta_t < 0$):** If an expected reward fails to materialize, dopamine neurons completely shut off, dropping local dopamine concentrations far below baseline levels.
+    
+    - Step 4: Three-Factor Credit Assignment & Synaptic Modification
+        - The dopamine signal $\delta_t$ is broadcast globally across the Striatum to execute a **Three-Factor Learning Rule** ($\Delta W = \eta \cdot \text{Pre} \cdot \text{Post} \cdot \delta_t$), updating the synapses of both streams simultaneously:
+            - **Updating the Critic:** The Critic's weights are adjusted to eliminate the error, forcing future value predictions $V(\mathbf{s}_t)$ to align perfectly with reality.
+            - **Reshaping the Actor (Policy Optimization):** 
+                - If **$\delta_t > 0$**, the dopamine burst triggers **Long-Term Potentipaton (LTP)** specifically at the synapses that just drove action $a_t$. The Basal Ganglia "opens the gate" wider, making this action highly likely to occur under this specific space-time state in the future. 
+                - If **$\delta_t < 0$ (Omission)**, the drop in dopamine triggers **Long-Term Depression (LTD)**. The weights governing that failed action are actively slashed, instantly collapsing its future probability.
+    - Why This Architecture Resolves the "Invertebrate Limitations"
+        1. **Omission Learning (Green Check):** Because the dopamine system can output a **negative scalar ($\delta_t < 0$)**, it can execute mathematical subtraction on synapses. It does not wait for chemicals to slowly decay; it actively and rapidly erases bad behaviors when rewards disappear.
+        2. **Interval Timing (Green Check):** Because the Cerebellum continuously stamps every millisecond into the state vector $\mathbf{s}_t$, the Critic computes a different value for $V(\mathbf{s}_{\text{1-second}})$ versus $V(\mathbf{s}_{\text{5-seconds}})$. The Actor learns to open the motor gate *only* at the precise millisecond where the reward margin is maximized.
+        3. **Map-Based Navigation (Green Check):** Because the Actor is completely decoupled from sensory inputs and instead reads the Pallium's spatial map, the animal can use its value gradient to calculate and navigate entirely novel, unlearned shortcut routes to a goal if a familiar path is blocked.
+
 ---
 
 - An interpretation of how these neural structures together implemented model-free RL is as follows (see Figure 3).
@@ -224,5 +256,89 @@
     - Crucially, model-free learning would have only been possible in vertebrates because of the prior existence of **valence neurons** and **neuromodulatory signals** that evolved earlier in Bilateria.
 
 
-### Breakthrough #3: Simulating in Early Mammals
+### 3 Model-Based RL: Simulating in Early Mammals (哺乳动物)
+
+- The hypothesis here is that the unique brain regions that emerged in early mammals facilitated the singular breakthrough of "simulating," which was thereby applied in multiple adaptive ways, such as in 
+    - vicarious trial and error (VTE) (替代性试错行为), 
+    - episodic memory (情景记忆), 
+    - and counterfactual learning.
+
+- **By "simulating" I simply refer to the ability to perform model-based reinforcement learning, whereby an animal can play out and simulate action sequences before taking an action.** 
+    - **In early mammals, the dorsal pallium (背侧皮层) of the ancestral amniote (羊膜动物) transformed into the neocortex (新皮质) (Tosches et al., 2018).** 
+    - **I propose that the unique capabilities offered by this new neocortex relative to the pallium were its ability to internally invoke simulated actions and stimuli.** 
+    - A mammal with such an ability can pause, simulate a reality, manipulate it, evaluate it, and then act accordingly. 
+    - This ability can be applied in many ways, such as for 
+        - VTE (simulating paths), 
+        - episodic memory (simulating a past event), 
+        - or counterfactual learning (simulating alternative choices).
+
+- An interpretation of how the neocortex enabled such model-based reinforcement learning is as follows. 
+    - **The neocortex seems to be made up of a repeated columnar microcircuit (the "neocortical column"; Mountcastle, 1978).** 
+    - There are many competing theories of the specific computations performed by this microcircuit — including 
+        - predictive coding (Rao and Ballard, 1999; Bastos et al., 2012; Spratling, 2017; Keller and Mrsic-Flogel, 2018), 
+        - adaptive resonance theory (Grossberg and Versace, 2008), 
+        - and hierarchical temporal memory (George and Hawkins, 2009; Hawkins and Ahmad, 2016; Bennett, 2020). 
+    - **Despite differences in these interpretations, they all generally agree that the microcircuit builds a self-supervised "model" with the purpose of predicting the entirety of its bottoms-up input.** 
+    - **The self-supervised nature of the neocortex shares many features with a class of machine learning models called "generative models" (Kersten et al., 2004; Knill and Pouget, 2004; Parr and Friston, 2018).** 
+    - A generative model learns a "latent representation" (also called a "model" or an "explanation") of its input. 
+    - A generative model has two modes 
+        - an "inference mode" where it picks a latent representation that best "explains" its bottom-up input 
+        - and a "generative mode" where it generates its own training data given a specific latent representation. 
+    - **Learning occurs by comparing the match between the simulated data and the actual data.** 
+    - Learning is optimized to minimize such mismatches (i.e., minimize "prediction errors"). 
+    - Hence these generative models are "self-supervised" — trained only by the degree with which their own model of reality has successfully predicted its own input.
+
+![](../imgs/02_Vertebrate_to_Mammal.png)
+![](../imgs/02_Neocortex_Simulation.png)
+
+- The neocortex of early mammals had two broad sub-regions: the frontal cortex and the sensory cortex (see Figure 4). 
+    - **The frontal cortex** in early mammals is believed to be homologous (同源的) to the anterior cingulate cortex (ACC, 前扣带皮层) of later mammals (Laubach et al., 2018; van Heukelum et al., 2020). 
+    - **The sensory cortex** had several homologous subregions for different modalities:
+        - visual areas, 
+        - somatosensory (躯体感觉) areas, 
+        - and auditory areas. 
+    - This model suggests that each subregion implemented a generative model of sensor data from a given modality, with the goal of explaining its own input. 
+    - **However, this model proposes that the ACC served a different function, albeit (尽管) performing an identical computation. Instead of receiving input from external sensory, the ACC of all mammals receives input from the amygdala (杏仁核) and hippocampus (Reppucci and Petrovich, 2015), and projects throughout the sensory cortex (Zhang et al., 2014; Goll et al., 2015; Atlan et al., 2018; White et al., 2018; reviewed in Kamigaki, 2019).**
+        - **I hypothesize that the ACC is building a generative model of "paths" from the hippocampus, given "goals" from the amygdala. The goal represented is not a complex representation of the actual objects or sensory stimulus, but rather the actual valence results in the amygdala. The ACC thereby tries to explain the sequence of places that will be taken given a latent representation of a "goal" from the amygdala.** 
+        - **One interpretation of this is that the latent representation in ACC is a model of "intent" — it observes an animal’s path, place, and context from the hippocampus and attempts to predict why the animal is behaving the way it is.**
+        - This is consistent with other conceptualizations of generative models in the context of movement, often referred to as "active inference" (Adams et al., 2012).
+
+- This model proposes that one function of this ACC representation of "intent" is its ability to trigger internally invoked simulations, which thereby allowed animals to engage in model-based learning (see Figure 5). 
+    - When an animal reaches a "choice point" where the right answer is uncertain, this uncertainty is represented by multiple conflicting predictions from different columns of the ACC. 
+    - This conflicting set of predictions triggers the animal to pause its movements. 
+    - The neural substrate of this pausing may be the ACC direct projection to the subthalamic nucleus (丘脑底核), which has been shown to be leveraged during top-down inhibition (Aron, 2006; Heikenfeld et al., 2020). 
+    - The ACC can then trigger simulated paths through its loop with the hippocampus and can internally invoke the corresponding sensory representations of such paths through either its direct connections to the sensory cortex or through its indirect connections through the claustrum (屏状体) or hippocampus. 
+    - During this "pause," the generative model in the sensory neocortex shifts from being externally driven ("inference mode") to internally driven ("generative mode").
+    - The ACC will continue to explore "movements" consistent with its generative model of intent. 
+    - These internally invoked representations of the world in the sensory neocortex can then be evaluated in the BG. 
+    - When an imagined path finally achieves an outcome that leads the basal ganglia to release enough dopamine, it will trigger a "GO" response.
+    - This accomplishes two things. 
+        - First, it immediately sensitizes the "imagined" path that the ACC triggered through the hippocampus, thereby biasing subsequent movements to be consistent with what was imagined.
+        - Second, it overcomes the ACC suppression of movement through the STN, enabling the evolutionarily older basal ganglia to take over behavior again.
+
+- During ongoing movement, when columns of ACC agree in their predictions of subsequent movement, the ACC can still exert some control over behavior by biasing the latent representations in the sensory neocortex to be consistent with the imagined path. 
+    - **This perhaps was the first version of "cognitive control" and "attention".** 
+    - The ACC projects to sensory neocortex where it can perform "gain control" and bias sensory representations (Goll et al., 2015; Atlan et al., 2018; White et al., 2018).
+
+- Note that this "pause-simulate" behavior does not only apply to imagining action paths, but it also equally applies to 
+    - imagining past events (episodic memory), 
+    - imagining alternative choices to choices you already made (counterfactual learning), 
+    - and perhaps even working memory (holding things "in mind"). 
+- **The important feature is the ability of the ACC to trigger internally invoked simulations in the sensory cortex, which can be used to train the basal ganglia vicariously.**
+
+
+- The motor cortex emerged in later mammals (placentals; Beck et al., 1996; Kaas, 2012). 
+    - Motor cortex can also be interpreted through the lens of a frontal region that builds a model of "intent" and uses it to predict movement and trigger internally invoked simulation in the presence of uncertainty.
+    - In early mammals, the motor cortex was not required for moving in general but was required for movements that require preplanning. 
+        - For example, movements where animals must grasp something they see or carefully step their feet on specific platforms requires simulating actions before moving—these fine movement skills are uniquely enabled by the motor cortex. 
+    - **The motor cortex can simulate these actions through its projections to the somatosensory cortex; the same way ACC can simulate paths through its projections to overall sensory cortex.** 
+        - The key difference between the motor cortex and the ACC is that the motor cortex gets its top-down input of "intent" from the ACC, and predicts specific body movements in the somatosensory cortex, while the ACC gets its top-down input of "intent" form the amygdala and predicts general navigational paths in the hippocampus. 
+    - In this sense, the ACC relationship with the motor cortex was the first "motor hierarchy," where goals flowed from the ACC to motor cortex. 
+    - Therefore, the addition of the motor cortex can be viewed as an elaboration on the previous ACC-sensory network, which enabled the planning of fine motor movements.
+
+- The unique neocortical ability to trigger internally invoked simulations and use them for learning would not have been possible without two features inherited from earlier vertebrates. 
+    - Firstly, spatial mapping in earlier vertebrates was repurposed in later mammals in order to explore environments vicariously. 
+        - Without a spatial map, it would be impossible to simulate various movements and their consequences.
+    - **Secondarily, internally invoked simulations work by training the basal ganglia vicariously — the basal ganglia does not have to tell the difference between an internally invoked or externally invoked sensory data from the sensory cortex, it merely learns what sequences of movements trigger dopamine release.** 
+    - **This ability to learn vicariously was only possible because it was built on top of the foundation of the older basal ganglia.**
 
