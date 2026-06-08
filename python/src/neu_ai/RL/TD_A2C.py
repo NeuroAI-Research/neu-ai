@@ -1,85 +1,39 @@
 import gymnasium as gym
 import torch as tc
-import torch.nn as nn
-from torch.distributions import Categorical
 
-from neu_ai.nn_utils import mlp
-from neu_ai.utils import Memory
+from neu_ai.RL.ActorCritic import ActorCritic
 
 
-class RLBase:
-    env: gym.Env
-
-    def run(s, n_episode=200, f_log=10, mem_size=2000):
-        s.memory = Memory(mem_size)
-
-        for e in range(n_episode):
-            obs, _ = s.env.reset()
-            eps_rew = 0
-            done = False
-            while not done:
-                act = s.sample_act(obs)
-                obs2, rew, term, trunc, _ = s.env.step(act)
-                s.memory.save([obs, act, obs2, rew, term])
-                s.step()
-
-                obs = obs2
-                eps_rew += rew
-                done = term or trunc
-            if e % f_log == 0:
-                print(f"episode: {e}, eps_rew: {eps_rew}")
-        s.env.close()
-
-    def sample_act(s, obs):
-        return s.env.action_space.sample()
-
-    def step(s):
-        print(s.memory.cnt)
-
-
-# ==================================
-
-
-class TD_A2C(RLBase):
+class SomeAlgo(ActorCritic):
+    n_opt_step = 80
     batch_size = 64
-    gamma = 0.99
 
-    def __init__(s, env: gym.Env, hidden=[64, 64], lr=1e-3):
-        s.env = env
-        d_obs = env.observation_space.shape[0]
-        d_act = env.action_space.n
+    def learn_from_memory(s):
+        memory = list(map(tc.from_numpy, s.memory))
+        for _ in range(s.n_opt_step):
+            idx = tc.randperm(s.mem_size)[: s.batch_size]
+            mem = [v[idx] for v in memory]
+            obs, act, next_obs, rew, term, trunc = mem
 
-        # BasalGanglia.Striatum.Striosome 基底核.纹状体.小体:
-        s.actor = mlp([d_obs, *hidden, d_act])
-        # BasalGanglia.Striatum.Matrix 基底核.纹状体.基质:
-        s.critic = mlp([d_obs, *hidden, 1])
-
-        s.nets = nn.ModuleList([s.actor, s.critic])
-        s.opt = tc.optim.Adam(s.nets.parameters(), lr)
-
-    @tc.no_grad()
-    def sample_act(s, obs):
-        obs = tc.from_numpy(obs)
-        dist = Categorical(logits=s.actor(obs))
-        return dist.sample().item()
-
-    def step(s):
-        # Hippocampus 海马体:
-        mem = s.memory.sample(s.batch_size)
-        if mem is not None:
-            obs, act, obs2, rew, term = map(tc.from_numpy, mem)
-
-            v, v2 = s.critic(obs), s.critic(obs2)
-            dist = Categorical(logits=s.actor(obs))
-            log_p: tc.Tensor = dist.log_prob(act[:, 0])[:, None]
+            V, next_V = map(s.get_V, (obs, next_obs))
+            logp = s.get_logp(obs, act)
 
             # Midbrain.VTA.DopaminergicNeurons 中脑.腹侧被盖区.多巴胺神经元:
-            td_err: tc.Tensor = rew + s.gamma * v2 * (1 - term) - v
+            td_err: tc.Tensor = rew + s.gam * next_V * (1 - term) - V
+
+            actor_loss = -(logp * td_err.detach()).mean()
+            s.actor_opt.zero_grad()
+            actor_loss.backward()
+            s.actor_opt.step()
 
             critic_loss = td_err.pow(2).mean()
-            actor_loss = -(log_p * td_err.detach()).mean()
-            loss = critic_loss + actor_loss
+            s.critic_opt.zero_grad()
+            critic_loss.backward()
+            s.critic_opt.step()
 
-            s.opt.zero_grad()
-            loss.backward()
-            s.opt.step()
+        print(f"actor_loss: {actor_loss}, critic_loss: {critic_loss}")
+
+
+if __name__ == "__main__":
+    algo = SomeAlgo(gym.make("CartPole-v1"))
+    algo.run()
