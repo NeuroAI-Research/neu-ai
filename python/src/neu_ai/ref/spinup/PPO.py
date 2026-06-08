@@ -279,7 +279,7 @@ def ppo(
     ac_kwargs=dict(),
     seed=0,
     steps_per_epoch=4000,
-    epochs=10,
+    epochs=250,
     gamma=0.99,
     clip_ratio=0.2,
     pi_lr=3e-4,
@@ -575,7 +575,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", "-s", type=int, default=0)
     parser.add_argument("--cpu", type=int, default=4)
     parser.add_argument("--steps", type=int, default=4000)
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=250)
     parser.add_argument("--exp_name", type=str, default="ppo")
     args = parser.parse_args()
 

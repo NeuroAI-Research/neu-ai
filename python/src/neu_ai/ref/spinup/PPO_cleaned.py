@@ -106,7 +106,7 @@ def ppo(
     env=gym.make("HalfCheetah-v5"),
     seed=10000,
     buf_size=4000,
-    epochs=10,
+    epochs=250,
     gamma=0.99,
     clip_ratio=0.2,
     pi_lr=3e-4,
