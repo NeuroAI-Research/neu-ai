@@ -3,6 +3,7 @@ from typing import Dict, List
 
 import cv2
 import jax.numpy as jnp
+import numba
 import numpy as np
 import pypdfium2
 
@@ -67,6 +68,15 @@ def load_json(path):
         return json.load(f)
 
 
+@numba.njit
+def discount_cumsum(x: np.ndarray, d):
+    # [x0, x1, x2] -> [x0 + d * x1 + d^2 * x2, x1 + d * x2, x2]
+    y = x.copy()
+    for i in range(len(x) - 2, -1, -1):
+        y[i] += d * y[i + 1]
+    return y
+
+
 class Tree:
     def get_id(s, x: Dict):
         pass
@@ -104,12 +114,16 @@ class Memory:
     def __init__(s, size):
         s.size = size
 
+    @property
+    def full(s):
+        return s.cnt % s.size == 0
+
     def save(s, values: List[np.ndarray]):
         if not hasattr(s, "mem"):
             s.mem: List[np.ndarray] = []
             s.cnt = 0
             for v in values:
-                v_shape = (1,) if np.isscalar(v) else v.shape
+                v_shape = (1,) if np.ndim(v) == 0 else v.shape
                 s.mem.append(np.zeros((s.size, *v_shape), dtype=np.float32))
         ptr = s.cnt % s.size
         for i, v in enumerate(values):

@@ -4,6 +4,7 @@ name = "neu-ai"
 version = "0.0.1"
 description = "NeuroAI Research"
 dependencies = [
+    "numba",
     "jax",
     "optax",
     "flax",

@@ -279,7 +279,7 @@ def ppo(
     ac_kwargs=dict(),
     seed=0,
     steps_per_epoch=4000,
-    epochs=50,
+    epochs=10,
     gamma=0.99,
     clip_ratio=0.2,
     pi_lr=3e-4,
@@ -497,10 +497,11 @@ def ppo(
             DeltaLossPi=(loss_pi.item() - pi_l_old),
             DeltaLossV=(loss_v.item() - v_l_old),
         )
+        # assert 0, (loss_pi.item(), loss_v.item())
 
     # Prepare for interaction with environment
     start_time = time.time()
-    o, ep_ret, ep_len = env.reset()[0], 0, 0
+    o, ep_ret, ep_len = env.reset(seed=seed)[0], 0, 0
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
@@ -574,7 +575,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", "-s", type=int, default=0)
     parser.add_argument("--cpu", type=int, default=4)
     parser.add_argument("--steps", type=int, default=4000)
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--exp_name", type=str, default="ppo")
     args = parser.parse_args()
 
