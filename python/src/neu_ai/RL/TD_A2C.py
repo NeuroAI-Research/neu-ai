@@ -4,7 +4,7 @@ import torch as tc
 from neu_ai.RL.ActorCritic import ActorCritic
 
 
-class SomeAlgo(ActorCritic):
+class TD_A2C(ActorCritic):
     n_opt_step = 80
     batch_size = 64
 
@@ -35,5 +35,5 @@ class SomeAlgo(ActorCritic):
 
 
 if __name__ == "__main__":
-    algo = SomeAlgo(gym.make("CartPole-v1"))
+    algo = TD_A2C(gym.make("CartPole-v1"))
     algo.run()

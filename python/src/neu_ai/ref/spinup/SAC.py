@@ -104,7 +104,7 @@ class MLPActorCritic(nn.Module):
         self,
         observation_space,
         action_space,
-        hidden_sizes=(256, 256),
+        hidden_sizes=(64, 64),
         activation=nn.ReLU,
     ):
         super().__init__()
@@ -288,6 +288,9 @@ def sac(
     np.random.seed(seed)
 
     env, test_env = env_fn(), env_fn()
+    env: gym.Env
+    env.reset(seed=seed)
+    env.action_space.seed(seed)
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape[0]
 
@@ -405,6 +408,10 @@ def sac(
                 p_targ.data.mul_(polyak)
                 p_targ.data.add_((1 - polyak) * p.data)
 
+        # r1 = (2.037222385406494, -0.4769050180912018)
+        # r2 = (loss_q.item(), loss_pi.item())
+        # assert 0, (r1 == r2, r1, r2)
+
     def get_action(o, deterministic=False):
         return ac.act(torch.as_tensor(o, dtype=torch.float32), deterministic)
 
@@ -475,7 +482,7 @@ def sac(
                 logger.save_state({"env": env}, None)
 
             # Test the performance of the deterministic version of the agent.
-            test_agent()
+            # test_agent()
 
             # Log info about epoch
             logger.log_tabular("Epoch", epoch)
@@ -498,7 +505,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", type=str, default="HalfCheetah-v5")
-    parser.add_argument("--hid", type=int, default=256)
+    parser.add_argument("--hid", type=int, default=64)
     parser.add_argument("--l", type=int, default=2)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--seed", "-s", type=int, default=0)

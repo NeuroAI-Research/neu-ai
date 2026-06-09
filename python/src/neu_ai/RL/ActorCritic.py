@@ -92,7 +92,7 @@ class ActorCritic:
             return pi.log_prob(act)
 
     def get_V(s, obs):
-        return s.critic(obs)[:, 0]
+        return tc.squeeze(s.critic(obs), -1)
 
     def learn_from_memory(s):
         raise NotImplementedError
