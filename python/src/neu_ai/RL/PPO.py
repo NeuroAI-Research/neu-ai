@@ -1,17 +1,70 @@
+import gymnasium as gym
 import numba
 import numpy as np
 import torch as tc
+import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import Categorical, Normal
+from torch.optim import Adam
 
-from neu_ai.nn_utils import to_np
-from neu_ai.RL.ActorCritic import ActorCritic
+from neu_ai.nn_utils import mlp, to_np
+from neu_ai.RL.RLBase import RLBase
 
 
-class PPO(ActorCritic):
+class PPOActor(nn.Module):
+    log_std: tc.Tensor
+
+    def __init__(s, d_obs, hid, d_act, act_type, Act):
+        super().__init__()
+        s.body = mlp([d_obs, *hid], Act, end=[Act()])
+        s.head = nn.Linear(hid[-1], d_act)
+        s.act_type = act_type
+        if act_type is float:
+            log_std = nn.Parameter(-0.5 * tc.ones(d_act))
+            s.register_parameter("log_std", log_std)
+
+    def forward(s, obs, act=None):
+        x = s.body(obs)
+        if s.act_type is float:
+            pi = Normal(s.head(x), s.log_std.exp())
+            act = pi.sample() if act is None else act
+            logp = pi.log_prob(act).sum(-1)
+        elif s.act_type is int:
+            pi = Categorical(logits=s.head(x))
+            act = pi.sample() if act is None else act
+            logp = pi.log_prob(act)
+        return act, logp
+
+
+class PPO(RLBase):
+    on_policy = True
+    mem_size = 4000
+
     n_opt_step = 80
     target_kl = 0.01
     clip_ratio = 0.2
     lam = 0.97
+
+    def __init__(
+        s,
+        env=gym.make("HalfCheetah-v5"),
+        seed=0,
+        hid=[64, 64],
+        Act=nn.Tanh,
+        actor_lr=3e-4,
+        critic_lr=1e-3,
+    ):
+        d_obs, d_act, act_type = s.set_env(env, seed)
+        s.actor = PPOActor(d_obs, hid, d_act, act_type, Act)
+        s.critic = mlp([d_obs, *hid, 1], Act)
+        s.actor_opt = Adam(s.actor.parameters(), actor_lr)
+        s.critic_opt = Adam(s.critic.parameters(), critic_lr)
+
+    def get_act(s, obs):
+        return s.actor(obs)[0]
+
+    def get_V(s, obs):
+        return tc.squeeze(s.critic(obs), -1)
 
     def learn_from_memory(s):
         with tc.no_grad():
@@ -23,11 +76,11 @@ class PPO(ActorCritic):
             V, next_V = map(to_np, (V, next_V))
             adv, ret = ppo_adv_ret(rew, term, trunc, V, next_V, s.gam, s.lam)
             adv, ret = map(tc.from_numpy, (adv, ret))
-            logp_old = s.get_logp(obs, act)
+            logp_old = s.actor(obs, act)[1]
 
         for _ in range(s.n_opt_step):
-            logp = s.get_logp(obs, act)
-            kl = (logp_old - logp).mean()
+            logp = s.actor(obs, act)[1]
+            kl = tc.mean(logp_old - logp)
             if kl > 1.5 * s.target_kl:
                 break
             ratio = tc.exp(logp - logp_old)
@@ -70,19 +123,19 @@ if __name__ == "__main__":
     ppo.run()
 
 """
-step_cnt: 989000, eps_ret: 1761.5294350903976
-step_cnt: 990000, eps_ret: 1873.2375446039932
-step_cnt: 991000, eps_ret: 1727.9603611194204
-step_cnt: 992000, eps_ret: 1847.0182999400954
-actor_loss: -0.0071354119514810644, critic_loss: 516.9139404296875
-step_cnt: 993000, eps_ret: 1733.812706919411
-step_cnt: 994000, eps_ret: 1813.2953177810239
-step_cnt: 995000, eps_ret: 1916.8096961083565
-step_cnt: 996000, eps_ret: 2041.0646851986794
-actor_loss: -0.026656264111880802, critic_loss: 471.5614318847656
-step_cnt: 997000, eps_ret: 1824.4477461229003
-step_cnt: 998000, eps_ret: 1806.2452513457097
-step_cnt: 999000, eps_ret: 1972.4496855301963
-step_cnt: 1000000, eps_ret: 1979.1388695689243
-actor_loss: -0.018384673550106485, critic_loss: 328.0265197753906
+step: 989000, eps_ret: 1652.3620277037098
+step: 990000, eps_ret: 2046.193352009298
+step: 991000, eps_ret: 2665.7532212771403
+step: 992000, eps_ret: 2167.9729595426525
+actor_loss: -0.031430037976004625, critic_loss: 1244.3602294921875
+step: 993000, eps_ret: 2566.200958702792
+step: 994000, eps_ret: 2579.5729588507465
+step: 995000, eps_ret: 864.0350353725199
+step: 996000, eps_ret: 2532.0488680306553
+actor_loss: -0.020459600404258878, critic_loss: 502.8697509765625
+step: 997000, eps_ret: 1276.5223480369687
+step: 998000, eps_ret: 1219.594475779663
+step: 999000, eps_ret: 946.6770729546146
+step: 1000000, eps_ret: 1662.9552099059229
+actor_loss: -0.006879132759010595, critic_loss: 631.43798828125
 """
