@@ -9,120 +9,118 @@ from gymnasium.spaces import Box
 from torch.distributions import Normal
 from torch.optim import Adam
 
-from neu_ai.nn_utils import mlp
-from neu_ai.RL.RLBase import RLBase
+from neu_ai.nn_utils import mlp, opt_step, tensor
+from neu_ai.rl.RLBase import RLBase
 
 
-class SACActor(nn.Module):
-    def __init__(s, d_obs, hid, d_act, act_type, Act):
-        assert act_type is float
+class SACNormalPi(nn.Module):
+    def __init__(s, sizes, Act=nn.ReLU):
         super().__init__()
-        s.body = mlp([d_obs, *hid], Act, end=[Act()])
-        s.mu = nn.Linear(hid[-1], d_act)
-        s.log_std = nn.Linear(hid[-1], d_act)
+        s.body = mlp(sizes[:-1], Act, end=[Act()])
+        s.mu = nn.Linear(sizes[-2], sizes[-1])
+        s.log_std = nn.Linear(sizes[-2], sizes[-1])
 
-    def forward(s, obs, act=None):
-        x = s.body(obs)
+    def forward(s, s_t):
+        x = s.body(s_t)
         mu = s.mu(x)
-        std = tc.clamp(s.log_std(x), -20, 2).exp()
-        pi = Normal(mu, std)
-        act = pi.rsample()
-        logp = pi.log_prob(act).sum(-1)
-        logp -= (2 * (np.log(2) - act - F.softplus(-2 * act))).sum(-1)
-        return tc.tanh(act), logp
+        std = tc.exp(tc.clip(s.log_std(x), -20, 2))
+        dist = Normal(mu, std)
+        a_t = dist.rsample()
+        logp = dist.log_prob(a_t).sum(-1)
+        a_t_new = tc.tanh(a_t)
+        # NaN crash: logp_new = logp - tc.log(1 - a_t_new**2).sum(-1)
+        logp_new = logp - tc.sum(2 * (np.log(2) - a_t - F.softplus(-2 * a_t)), dim=-1)
+        return a_t_new, logp_new
 
 
-class SACActorCritic(nn.Module):
-    def __init__(s, d_obs, hid, d_act, act_type, Act):
+class Q1Q2(nn.Module):
+    def __init__(s, sizes):
         super().__init__()
-        s.actor = SACActor(d_obs, hid, d_act, act_type, Act)
-        s.q1 = mlp([d_obs + d_act, *hid, 1], Act)
-        s.q2 = mlp([d_obs + d_act, *hid, 1], Act)
+        s.Q1 = mlp(sizes)
+        s.Q2 = mlp(sizes)
 
-    def q1q2(s, obs, act):
-        x = tc.cat([obs, act], dim=-1)
-        return tc.squeeze(s.q1(x), -1), tc.squeeze(s.q2(x), -1)
+    def forward(s, s_t, a_t):
+        x = tc.cat((s_t, a_t), dim=-1)
+        return tc.squeeze(s.Q1(x), -1), tc.squeeze(s.Q2(x), -1)
 
 
 class SAC(RLBase):
-    on_policy = False
-    mem_size = int(1e6)
+    n_rand_step = int(1e4)
+    D_size = int(1e6)
 
-    batch_size = 100
-    alpha = 0.2
-    polyak = 0.995
+    n_iteration = int(1e6)
+    n_env_step = 1
+    n_grad_step = 1
+    mini_batch_size = 100
+    gamma = 0.99
+    lr = 1e-3
+    tau = 0.005
+    hidden = [64, 64]
 
-    def __init__(
-        s,
-        env=gym.make("HalfCheetah-v5"),
-        seed=0,
-        hid=[64, 64],
-        Act=nn.ReLU,
-        lr=1e-3,
-    ):
+    def __init__(s, env: gym.Env, seed=0):
         sp: Box = env.action_space
         assert np.all(sp.low == -1) and np.all(sp.high == 1)
+        d_obs, d_act, act_type = s.init(env, seed)
 
-        d_obs, d_act, act_type = s.set_env(env, seed)
-        s.ac = SACActorCritic(d_obs, hid, d_act, act_type, Act)
-        s.ac_tar = deepcopy(s.ac)
-        s.ac_tar.requires_grad_(False)
-        s.q_params = [*s.ac.q1.parameters(), *s.ac.q2.parameters()]
-        s.actor_opt = Adam(s.ac.actor.parameters(), lr)
-        s.critic_opt = Adam(s.q_params, lr)
+        # - Input: $\theta_1, \theta_2, \phi$. (Initial parameters)
+        s.Q1Q2 = Q1Q2([d_obs + d_act, *s.hidden, 1])
+        s.Q_opt = Adam(s.Q1Q2.parameters(), s.lr)
+        s.pi = SACNormalPi([d_obs, *s.hidden, d_act])
+        s.pi_opt = Adam(s.pi.parameters(), s.lr)
+        s.alpha = nn.Parameter(tc.tensor(0.2))
+        s.alpha_opt = Adam([s.alpha], s.lr)
+        s.H_tar = -d_act  # (e.g., -6 for HalfCheetah-v1)
+        # - $\bar{\theta}_1 \gets \theta_1, \bar{\theta}_2 \gets \theta_2$  (Initialize target network weights)
+        s.Q1Q2_tar = deepcopy(s.Q1Q2)
+        s.Q1Q2_tar.requires_grad_(False)
 
-    def get_act(s, obs):
-        return s.ac.actor(obs)[0]
+    def get_act(s, s_t):
+        return s.pi(s_t)[0]
 
-    def learn_from_memory(s):
-        mem = s.sample_mem(s.batch_size)
-        obs, act, next_obs, rew, term, trunc = map(tc.from_numpy, mem)
+    def run(s):
+        for _ in range(s.n_iteration):
+            for _ in range(s.n_env_step):
+                s.step_env()
+            for _ in range(s.n_grad_step):
+                s.update_params()
 
-        q1, q2 = s.ac.q1q2(obs, act)
+    def update_params(s):
+        if s.mini_batch_size > s.D_cnt:
+            return
+        data = s.sample(s.mini_batch_size)
+        s_t, a_t, r_t, s_next, term, trunc = tensor(data)
+
+        # - $\theta_i \gets \theta_i - \lambda_Q \nabla_{\theta_i} J_Q(\theta_i) \quad i \in \{1, 2\}$. (Update the Q-function parameters)
         with tc.no_grad():
-            next_act, next_logp = s.ac.actor(next_obs)
-            next_q = tc.min(*s.ac_tar.q1q2(next_obs, next_act))
-            q_tar = rew + s.gam * (1 - term) * (next_q - s.alpha * next_logp)
-        q_loss = F.mse_loss(q1, q_tar) + F.mse_loss(q2, q_tar)
+            a_next, logp_next = s.pi(s_next)
+            Q_tar_next = tc.min(*s.Q1Q2_tar(s_next, a_next))
+            V_tar_next = Q_tar_next - s.alpha * logp_next
+            Q_tar_t = r_t + s.gamma * V_tar_next * (1 - term)
+        Q1_t, Q2_t = s.Q1Q2(s_t, a_t)
+        Q_loss = F.mse_loss(Q1_t, Q_tar_t) + F.mse_loss(Q2_t, Q_tar_t)
+        opt_step(s.Q_opt, Q_loss)
 
-        s.critic_opt.zero_grad()
-        q_loss.backward()
-        s.critic_opt.step()
+        # - $\phi \gets \phi - \lambda_\pi \nabla_\phi J_\pi(\phi)$. (Update policy weights)
+        s.Q1Q2.requires_grad_(False)
+        a_t_new, logp_new = s.pi(s_t)
+        Q_t_new = tc.min(*s.Q1Q2(s_t, a_t_new))
+        pi_loss = tc.mean(s.alpha * logp_new - Q_t_new)
+        opt_step(s.pi_opt, pi_loss)
+        s.Q1Q2.requires_grad_(True)
 
-        for p in s.q_params:
-            p.requires_grad = False
+        # - $\alpha \gets \alpha - \lambda \nabla_\alpha J(\alpha)$. (Adjust temperature)
+        H = -logp_new
+        alpha_loss = s.alpha * tc.mean(H - s.H_tar).detach()
+        opt_step(s.alpha_opt, alpha_loss)
+        if s.D_cnt % 10000 == 0:
+            print(f"alpha (temperature): {s.alpha.item()}")
 
-        act, logp = s.ac.actor(obs)
-        q = tc.min(*s.ac.q1q2(obs, act))
-        actor_loss = tc.mean(s.alpha * logp - q)
-
-        s.actor_opt.zero_grad()
-        actor_loss.backward()
-        s.actor_opt.step()
-
-        for p in s.q_params:
-            p.requires_grad = True
-
+        # - $\bar{\theta}_i \gets \tau \theta_i + (1 - \tau) \bar{\theta}_i \quad i \in \{1, 2\}$. (Update target network weights)
         with tc.no_grad():
-            for p, p_tar in zip(s.ac.parameters(), s.ac_tar.parameters()):
-                p_tar.data.mul_(s.polyak)
-                p_tar.data.add_((1 - s.polyak) * p.data)
+            for p, p_tar in zip(s.Q1Q2.parameters(), s.Q1Q2_tar.parameters()):
+                p_tar.copy_(s.tau * p + (1 - s.tau) * p_tar)
 
 
 if __name__ == "__main__":
-    sac = SAC()
+    sac = SAC(env=gym.make("HalfCheetah-v5"))
     sac.run()
-
-"""
-step: 990000, eps_ret: 10515.319903350553
-step: 991000, eps_ret: 10466.835067423295
-step: 992000, eps_ret: 10239.309681506571
-step: 993000, eps_ret: 10455.340841027511
-step: 994000, eps_ret: 10451.398754967224
-step: 995000, eps_ret: 10255.969359057563
-step: 996000, eps_ret: 10162.353617167295
-step: 997000, eps_ret: 10626.145437913257
-step: 998000, eps_ret: 10285.659230723217
-step: 999000, eps_ret: 10264.840685310728
-step: 1000000, eps_ret: 10341.009941707167
-"""
