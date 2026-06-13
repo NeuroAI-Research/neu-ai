@@ -212,6 +212,20 @@ J(\alpha) = E_{a_t\sim\pi_t} [ -\alpha \log\pi_t (a_t|s_t) - \alpha H ] $$
 
 ---
 
+## Appendix C Enforcing Action Bounds
+
+- We use an unbounded Gaussian as the action distribution. 
+- However, in practice, the actions needs to be bounded to a finite interval. 
+- To that end, we apply an invertible squashing function (tanh) to the Gaussian samples, and employ the change of variables formula to compute the likelihoods of the bounded actions. 
+- In the other words, let $u \in R^D$ be a random variable and $\mu(u|s)$ the corresponding density with infinite support. 
+    - Then $a = \tanh(u)$, where $\tanh$ is applied element-wise, is a random variable with support in $(−1, 1)$ with a density given by
+
+$$ \pi(a|s) = \mu(u|s) \left| \det \left( {d a \over d u} \right) \right|^{-1} $$
+
+- Since the Jacobian ${da\over du} = \text{diag}(1 − \tanh^2(u))$ is diagonal, the log-likelihood has a simple form
+
+$$ \log \pi(a|s) = \log \mu(u|s) - \sum_{i=1}^D \log(1 - \tanh^2(u_i)) $$
+
 ## 7 Experiments
 
 - The goal of our experimental evaluation is to understand how the sample complexity and stability of our method compares with prior off-policy and on-policy deep reinforcement learning algorithms.
