@@ -200,6 +200,17 @@ $$
         - Optimize surrogate $L$ wrt $\theta$, with $K$ epochs and **minibatch** size $M \le NT$
         - $\theta_\text{old} \gets \theta$
 
+$$
+\delta_t := r_t + \gamma V(s_{t+1}) - V(s_t) \\[5pt]
+A_t = \delta_t + (\gamma \lambda) \delta_{t+1} + ... + (\gamma \lambda)^{T-t+1} \delta_{T-1} \\[10pt]
+r_t(\theta) :=  { \pi_\theta (a_t|s_t) \over \pi_{\theta_\text{old}} (a_t|s_t) } \\[5pt]
+r^{clip} \equiv \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \\[5pt]
+L^{CLIP}(\theta) = E_t[ \min( r_t(\theta) A_t,  r^{clip} A_t ) ] \\[10pt]
+L_t^{VF} = (V_\theta(s_t) - V_t^\text{targ})^2 \\[5pt]
+{\color{red} \text{!!! maximize:}}\\[5pt]
+L_t^{CLIP+VF+S}(\theta) = E_t[ L_t^{CLIP}(\theta) - c_1 L_t^{VF}(\theta) + c_2 S[\pi_\theta](s_t) ]
+$$
+
 ---
 
 ## 6 Experiments

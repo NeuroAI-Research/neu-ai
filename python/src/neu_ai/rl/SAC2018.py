@@ -44,7 +44,7 @@ class Q1Q2(nn.Module):
         return tc.squeeze(s.Q1(x), -1), tc.squeeze(s.Q2(x), -1)
 
 
-class SAC(RLBase):
+class SAC2018(RLBase):
     n_rand_step = int(1e4)
     D_size = int(1e6)
 
@@ -122,5 +122,5 @@ class SAC(RLBase):
 
 
 if __name__ == "__main__":
-    sac = SAC(env=gym.make("HalfCheetah-v5"))
+    sac = SAC2018(env=gym.make("HalfCheetah-v5"))
     sac.run()
