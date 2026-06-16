@@ -133,6 +133,18 @@ L_\text{dyn}(\phi) = \max(1, \text{KL}[ \; \text{sg}(q_\phi(z_t|h_t, x_t))  \; \
 L_\text{rep}(\phi) = \max(1, \text{KL}[ \; q_\phi(z_t|h_t, x_t)  \; \parallel \; \text{sg}( p_\phi(z_t|h_t) ) \; ]) 
 $$
 
+- **Study note: Negative Log-Likelihood ($-\ln p$) is Mean Squared Error (MSE)**
+    - When the paper writes $-\ln p_\phi(x_t|z_t, h_t)$, it is treating the decoder as a probability distribution predictor.
+    - The **standard assumption** for continuous data is that the decoder predicts the mean ($\mu$) of a normal distribution, with a fixed variance ($\sigma^2 = 1$).
+    - The **probability density function** of a normal distribution for a prediction $\hat{x}$ given the truth $x$ is:
+    
+    $$ p(x) = {1 \over \sqrt{2\pi}} \exp\left( -{(x - \hat{x})^2 \over 2} \right) \\[5pt] 
+    \Rightarrow -\ln p(x) \propto (x - \hat{x})^2 $$
+
+    - **Minimizing MSE loss is mathematically identical to minimizing the NLL of a normal distribution.**
+
+---
+
 - Previous world models require scaling the representation loss differently based on the visual complexity of the environment. 
     - Complex 3D environments contain details unnecessary for control and thus prompt a stronger regularizer to simplify the representations and make them more predictable. 
     - In games with static backgrounds and where individual pixels may matter for the task, a weak regularizer is required to extract fine details. 
@@ -146,3 +158,55 @@ $$
 - Further model details and hyperparameters are included in the supplementary material.
 
 ### Critic learning
+
+- **The actor and critic neural networks learn behaviors purely from abstract trajectories of representations predicted by the world model**
+
+- For environment interaction, we select actions by sampling from the actor network without lookahead planning. 
+
+- **Markovian Model States**
+    - The actor and critic do not look at `raw image` inputs. 
+    - Instead, they operate on the compact model state:
+    
+    $$ s_t := \{h_t, z_t\} $$ 
+    
+    - $h_t$: The deterministic recurrent state (**memory of the past**)
+    - $z_t$: The stochastic discrete representation (**representation of the current moment**)
+    - Combining them ensures the state is Markovian, meaning $s_t$ **contains all the necessary information** to predict the future, making historical data redundant.
+
+- The actor aims to maximize the return 
+
+    $$ R_t := \sum_{\tau=0}^\infty \gamma^\tau r_{t+\tau} $$ 
+
+    - with a discount factor $\gamma = 0.997$ for each model state. 
+    
+- To consider **rewards beyond the prediction horizon $T = 16$**, the critic learns to approximate the distribution of returns for each state under the current actor behavior:
+
+    $$ \text{Actor: } a_t \sim \pi_\theta(a_t|s_t) \quad \text{Critic: } v_\psi(R_t|s_t) $$
+
+    - Starting from representations of replayed inputs, the world model and actor generate a trajectory of 
+        - **imagined model states** $s_{1:T}$, 
+        - actions $a_{1:T}$, 
+        - rewards $r_{1:T}$, 
+        - continuation flags $c_{1:T}$ 
+    - **Because the critic predicts a distribution, we read out its predicted values as the expectation of the distribution**:
+        
+        $$\boxed{ v_t := E[v_\psi(R_t|s_t)] } $$ 
+    
+    - To estimate returns that consider **rewards beyond the prediction horizon**, we compute bootstrapped $\lambda$-returns that integrate the predicted rewards and the values. 
+    - The critic learns to predict the distribution of the return estimates $R_t^\lambda$ using the NLL loss:
+
+    $$ L(\psi) := - \sum_{t=1}^T \ln p_\psi(R_t^\lambda | s_t) \\[5pt]
+    R_t^\lambda := r_t + \gamma c_t \left( (1-\lambda)v_t + \lambda R_{t+1}^\lambda \right) \quad R_T^\lambda := v_T $$
+
+    - **While a simple choice would be to parameterize the critic as a Normal distribution, the return distribution can have multiple modes and vary by orders of magnitude across environments.** 
+    - **To stabilize and accelerate learning under these conditions, we parameterize the critic as `categorical distribution with exponentially spaced bins`, decoupling the scale of gradients from the prediction targets as described later.** 
+    - To improve value prediction in environments where rewards are challenging to predict, we apply the critic loss both 
+        - to **imagined trajectories** with loss scale $\beta_\text{val} = 1$ 
+        - and to trajectories sampled from the **replay buffer** with loss scale $\beta_\text{rep\_val} = 0.3$
+    - The critic replay loss uses the imagination returns $R_t^\lambda$ at the start states of the imagination rollouts as on-policy value annotations for the replay trajectory to then compute $\lambda$-returns over the replay rewards.
+
+- **Because the critic regresses targets that `depend on its own predictions`, we `stabilize learning` by regularizing the critic towards predicting the outputs of an `exponentially moving average of its own parameters`.** 
+    - This is similar to target networks used previously in reinforcement learning but allows us to compute returns using the current critic network. 
+
+- **We further noticed that the randomly initialized reward predictor and critic networks at the start of training can result in large predicted rewards that can delay the onset of learning.** 
+    - **We thus initialize the output weight matrix of the reward predictor and critic to zeros, which alleviates the problem and accelerates early learning.**

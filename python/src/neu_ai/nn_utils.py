@@ -38,6 +38,11 @@ def stack_rows(rows: List[List[tc.Tensor]], dim):
     return [tc.stack([r[i] for r in rows], dim) for i in range(len(rows[0]))]
 
 
+def cross_entropy(logits: tc.Tensor, probs: tc.Tensor):
+    n = logits.shape[-1]
+    return F.cross_entropy(logits.view(-1, n), probs.view(-1, n))
+
+
 def one_hot_softmax(logits: tc.Tensor, noisy: bool, n_classes: int = None):
     """returns one-hot, but differentiable as softmax"""
     new_shape = old_shape = logits.shape

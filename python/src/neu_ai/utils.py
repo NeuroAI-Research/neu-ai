@@ -77,6 +77,36 @@ def discount_cumsum(x: np.ndarray, d):
     return y
 
 
+def exp_bins(x1, x2, n):
+    x = np.linspace(x1, x2, n)
+    return np.sign(x) * (10 ** np.abs(x) - 1)
+
+
+@numba.njit
+def two_hot_encode_scalar(x, bins):
+    probs = np.zeros_like(bins)
+    for i in range(len(bins) - 1):
+        if x <= bins[i + 1]:
+            b1, b2 = bins[i : i + 2]
+            # p1 * b1 + (1 - p1) * b2 = x
+            probs[i] = (x - b2) / (b1 - b2)
+            probs[i + 1] = (b1 - x) / (b1 - b2)
+            return probs
+
+
+@numba.njit
+def two_hot_encode(x: np.ndarray, bins):
+    xf = x.flatten()
+    probs = np.zeros((len(xf), len(bins)))
+    for i in numba.prange(len(xf)):
+        probs[i] = two_hot_encode_scalar(xf[i], bins)
+    return probs.reshape((*x.shape, len(bins)))
+
+
+def two_hot_decode(probs, bins):
+    return np.sum(probs * bins, axis=-1)
+
+
 class Tree:
     def get_id(s, x: Dict):
         pass
