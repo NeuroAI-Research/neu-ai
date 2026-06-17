@@ -6,11 +6,11 @@ import numpy as np
 import torch as tc
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Categorical, kl_divergence
+from torch.distributions import Categorical, Normal, kl_divergence
 
 from neu_ai.nn_utils import (
+    TwoHot,
     cat,
-    cross_entropy,
     mlp,
     one_hot_softmax,
     opt_step,
@@ -18,7 +18,7 @@ from neu_ai.nn_utils import (
     tensor,
     to_np,
 )
-from neu_ai.utils import exp_bins, shape, two_hot_decode, two_hot_encode
+from neu_ai.utils import shape
 
 
 class RSSMWorldModel(nn.Module):
@@ -87,6 +87,84 @@ class RSSMWorldModel(nn.Module):
         return loss, losses
 
 
+# =======================================
+
+
+class DreamerV3Critic(nn.Module):
+    def __init__(s, d_s):
+        super().__init__()
+        s.twohot = TwoHot()
+
+        s.net = mlp([d_s, 64, 64, len(s.twohot.bins)])
+        nn.init.zeros_(s.net[-1].weight)
+        nn.init.zeros_(s.net[-1].bias)
+
+    def forward(s, s_t):
+        # v_t := E[v_\psi(R_t|s_t)]
+        logits = s.net(s_t)
+        return s.twohot.decode(probs=F.softmax(logits, dim=-1))
+
+    def loss(s, s_t, R_tar):
+        logits = s.net(s_t)
+        return s.twohot.loss(logits, R_tar)
+
+
+@numba.njit
+def dreamerV3_R(r: np.ndarray, c, v, gamma, lam):
+    B, T, _ = r.shape
+    R = np.zeros_like(r)
+    for t in range(T - 1, -1, -1):
+        if t == T - 1:
+            R[:, t] = v[:, t]
+        else:
+            mix = (1 - lam) * v[:, t] + lam * R[:, t + 1]
+            R[:, t] = r[:, t] + gamma * c[:, t] * mix
+    return R
+
+
+# ===================================
+
+
+class DreamerV3Actor(nn.Module):
+    eta = 3e-4
+    S = 1.0
+    r_EMA = 0.99
+
+    def __init__(s, sizes, act_type):
+        super().__init__()
+        s.act_type = act_type
+        if act_type is float:
+            sizes[-1] *= 2
+        s.net = mlp(sizes)
+
+    def get_dist(s, s_t: tc.Tensor):
+        logits = s.net(s_t)
+        if s.act_type is float:
+            mu, std = tc.chunk(logits, 2, dim=-1)
+            std = F.softplus(std) + 1e-4
+            return Normal(mu, std)
+        return Categorical(logits=logits)
+
+    def update_S(s, R_t):
+        R_t = to_np(R_t)
+        delta_R = np.percentile(R_t, 95) - np.percentile(R_t, 5)
+        s.S = s.r_EMA * s.S + (1 - s.r_EMA) * delta_R
+
+    def loss(s, s_t, a_t, R_t, v_t):
+        A = tc.detach((R_t - v_t) / max(1, s.S))
+        dist = s.get_dist(s_t)
+        logp = dist.log_prob(a_t)
+        H = dist.entropy()
+        if s.act_type is float:
+            logp, H = logp.sum(-1), H.sum(-1)
+        pi_loss = -(A * logp).mean()
+        H_loss = -s.eta * H.mean()
+        return pi_loss, H_loss
+
+
+# =======================================
+
+
 def test_RSSMWorldModel():
     wm = RSSMWorldModel()
     opt = tc.optim.Adam(wm.parameters())
@@ -107,65 +185,44 @@ def test_RSSMWorldModel():
         opt_step(opt, loss)
 
 
-# =======================================
-
-
-class DreamerV3Critic(nn.Module):
-    def __init__(s, d_s):
-        super().__init__()
-        s.R_bins_np = exp_bins(-10, 10, 128)
-        s.R_bins = tensor(s.R_bins_np)
-
-        s.net = mlp([d_s, 64, 64, len(s.R_bins)])
-        nn.init.zeros_(s.net[-1].weight)
-        nn.init.zeros_(s.net[-1].bias)
-
-    def forward(s, s_t):
-        # v_t := E[v_\psi(R_t|s_t)]
-        logits = s.net(s_t)
-        probs = F.softmax(logits, dim=-1)
-        return tc.sum(probs * s.R_bins, dim=-1)
-
-    def loss(s, s_t: tc.Tensor, R_tar: np.ndarray, type="CE"):
-        if type == "CE":
-            logits = s.net(s_t)
-            probs_tar = tensor(two_hot_encode(R_tar, s.R_bins_np))
-            return cross_entropy(logits, probs_tar)
-        elif type == "MSE":
-            R_pred = s(s_t)
-            return F.mse_loss(R_pred, tensor(R_tar))
-
-
-@numba.njit
-def dreamerV3_R(r: np.ndarray, c, v, gamma, lam):
-    B, T, _ = r.shape
-    R = np.zeros_like(r)
-    for t in range(T - 1, -1, -1):
-        if t == T - 1:
-            R[:, t] = v[:, t]
-        else:
-            mix = (1 - lam) * v[:, t] + lam * R[:, t + 1]
-            R[:, t] = r[:, t] + gamma * c[:, t] * mix
-    return R
-
-
 def test_DreamerV3Critic():
-    bins = exp_bins(-10, 10, 128)
-    x = np.array([-666, 888])
-    probs = two_hot_encode(x, bins)
-    print(two_hot_decode(probs, bins))
+    twohot = TwoHot()
+    print(twohot.decode(twohot.encode(tc.tensor([-666, 888]))))
 
     d_s = 10
     s_t = tc.rand((1, 1, d_s))
-    R_tar = np.ones((1, 1)) * 1e3
+    R_tar = tc.ones((1, 1)) * 1e3
     critic = DreamerV3Critic(d_s)
     opt = tc.optim.Adam(critic.parameters())
     for i in range(1000):
-        loss_CE = critic.loss(s_t, R_tar, "CE")
-        loss_MSE = critic.loss(s_t, R_tar, "MSE")
+        loss_CE = critic.loss(s_t, R_tar)
+        loss_MSE = F.mse_loss(critic(s_t), R_tar)
         opt_step(opt, loss_CE)
         if i % 100 == 0:
             print(f"step: {i}, CE: {loss_CE.item()}, MSE: {loss_MSE.item()}")
+
+
+def test_DreamerV3Actor():
+    B, T, d_s, d_a = 2, 3, 10, 4
+    s_t = tc.rand((B, T, d_s))
+    R_t_np = np.random.normal(500, 150, (B, T))
+    v_t_np = R_t_np - np.random.exponential(10, (B, T))
+    R_t, v_t = tensor([R_t_np, v_t_np])
+
+    for act_type in [float, int]:
+        pi = DreamerV3Actor([d_s, 64, 64, d_a], act_type)
+        opt = tc.optim.Adam(pi.parameters())
+        pi.update_S(R_t)
+        with tc.no_grad():
+            a_t = pi.get_dist(s_t).sample()
+        for i in range(100):
+            losses = pi.loss(s_t, a_t, R_t, v_t)
+            loss = sum(losses)
+            opt_step(opt, loss)
+            if i % 10 == 0:
+                print(
+                    f"{act_type} {i}, [pi, H] losses: {[v.item() for v in losses]}, S: {pi.S:.2f}"
+                )
 
 
 if __name__ == "__main__":

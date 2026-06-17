@@ -210,3 +210,97 @@ $$
 
 - **We further noticed that the randomly initialized reward predictor and critic networks at the start of training can result in large predicted rewards that can delay the onset of learning.** 
     - **We thus initialize the output weight matrix of the reward predictor and critic to zeros, which alleviates the problem and accelerates early learning.**
+
+### Actor learning
+
+- The actor learns to choose actions that **maximize return** while exploring through an **entropy regularizer**. 
+    - However, the correct scale for this regularizer depends both on the scale and frequency of rewards in the environment. 
+    - Ideally, we would like the agent to explore more if rewards are sparse and exploit more if rewards are dense or nearby. 
+    - At the same time, the exploration amount should not be influenced by arbitrary scaling of rewards in the environment. 
+    - This requires normalizing the return scale while preserving information about reward frequency.
+    - To use a **fixed entropy scale** of $\eta = 3 \times 10^{−4}$ across domains, **we normalize returns to be approximately contained in the interval $[0, 1]$**. 
+    - **In practice, subtracting an offset from the returns does not change the actor gradient and thus dividing by the range $S$ is sufficient.** 
+    - Moreover, to avoid amplifying noise from function approximation under sparse rewards, we only scale down large return magnitudes but leave small returns below the threshold of $L = 1$ untouched. 
+    - We use the [**REINFORCE (1992) estimator**](https://link.springer.com/article/10.1007/BF00992696) for both discrete and continuous actions, resulting in the **surrogate (代理) loss function**:
+
+$$ L(\theta) := -\sum_{t=1}^T A \log \pi_\theta(a_t|s_t) + \eta H[ \pi_\theta(a_t|s_t) ] \\[5pt]
+A:= \text{sg}\left({ R_t^\lambda - v_\psi(s_t) \over \max(1, S) }\right) $$
+
+- The return distribution can be multi-modal and include outliers, especially for randomized environments where some episodes have higher achievable returns than others. 
+    - Normalizing by the smallest and largest observed returns would then scale returns down too much and may cause suboptimal convergence. 
+    - To be robust to these outliers, we compute the range from the 5th to the 95th return percentile over the return batch and smooth out the estimate using an exponential moving average:
+
+$$ S := \text{EMA}( \text{Per}(R_t^\lambda, 95) - \text{Per}(R_t^\lambda, 5), \; 0.99) $$
+
+- **Previous work typically normalizes advantages rather than returns, which puts a fixed amount of emphasis on maximizing returns over entropy regardless of whether rewards are within reach.**
+    - Scaling up advantages when rewards are sparse can amplify noise that outweighs the entropy regularizer and stagnates exploration. 
+    - Normalizing rewards or returns by standard deviation can fail under sparse rewards where their standard deviation is near zero, drastically amplifying rewards regardless of their size. 
+    - Constrained optimization targets a fixed entropy on average across states regardless of achievable returns, which is robust but explores slowly under sparse rewards and converges lower under dense rewards. 
+    - **We did not find stable hyperparameters across domains for these approaches.** 
+    
+- **Return normalization with a denominator limit overcomes these challenges, exploring rapidly under sparse rewards and converging to high performance across diverse domains.**
+
+
+### Robust predictions
+
+- **Reconstructing inputs and predicting rewards and returns can be challenging because the scale of these quantities can vary across domains.** 
+    - Predicting large targets using a `squared loss` can lead to divergence whereas `absolute` and `Huber losses` stagnate (停滞) learning. 
+    - On the other hand, normalizing targets based on running statistics introduces non-stationarity into the optimization. 
+    - **We suggest the `symlog squared error` as a simple solution to this dilemma.** 
+    
+- For this, a neural network $f_\theta(x)$ with inputs $x$ and parameters $\theta$ learns to **predict a transformed version of its targets $y$**. 
+    - To read out predictions $\hat{y}$ of the network, we apply the inverse transformation:
+    - **Using the logarithm as transformation would not allow us to predict targets that take on negative values. Therefore, we choose a function from the bi-symmetric logarithmic family that we name `symlog` as the transformation with the `symexp` function as its inverse:**
+
+$$ L(\theta) := {1\over 2} (f_\theta(x) - \text{symlog}(y))^2 \\[5pt]
+\hat{y} := \text{symexp}(f_\theta(x)) \\[5pt]
+\text{symlog}(x) := \text{sign}(x) \ln(|x|+1) \\[5pt]
+\text{symexp}(x) := \text{sign}(x) (\exp(|x|) - 1) $$
+
+$$
+\text{Derivation:} \\[5pt]
+y := \text{sign}(x) \ln(|x|+1) \\[5pt]
+\text{sign}(y) \cdot |y| = \text{sign}(x) \ln(|x|+1) \\[5pt]
+\ln(|x|+1) \ge 0 \Rightarrow \text{sign}(y) = \text{sign}(x) \\[5pt]
+\exp(|y|) - 1 =  |x| \\[5pt]
+\text{sign}(y) (\exp(|y|) - 1) = \text{sign}(x) \cdot |x| = x
+$$
+
+- The `symlog` function compresses the magnitudes of both large positive and negative values. 
+    - Unlike the logarithm, it is symmetric around the origin while preserving the input sign. 
+    - This allows the optimization process to quickly move the network predictions to large values when needed. 
+    - The `symlog` function approximates the identity around the origin so that it does not affect learning of targets that are already small enough.
+
+---
+
+- **For potentially stochastic targets, such as rewards or returns, we introduce the `symexp twohot loss`**
+    - **Here, the network outputs the `logits` for a softmax distribution over `exponentially spaced bins` $b_i \in B$**
+    - **Predictions are read out as the weighted average of the bin positions weighted by their predicted probabilities.** 
+    - Importantly, the network can output any continuous value in the interval because the weighted average can fall between the buckets:
+
+$$ \hat{y} := \text{softmax}(f(x))^T B \qquad B := \text{symexp}([ -20, ..., +20 ]) $$
+
+- The network is trained on `twohot encoded` targets, a generalization of `onehot encoding` to continuous values. 
+    - **The `twohot encoding` of a scalar is a vector with $|B|$ entries that are all $0$ except at the indices $k$ and $k + 1$ of the two bins closest to the encoded scalar.** 
+    - The two entries sum up to $1$, with linearly higher weight given to the bin that is closer to the encoded continuous number.
+    - The network is then trained to minimize the categorical cross entropy loss for classification with soft targets. 
+    - Note that the loss only depends on the probabilities assigned to the bins but not on the continuous values associated with the bin locations, decoupling the size of the gradients from the size of the targets:
+
+$$ L(\theta) := - \text{twohot}(y)^T \log \text{softmax}(f_\theta(x)) \qquad \text{Cross-Entropy} $$
+
+- Applying these principles, Dreamer 
+    - **transforms vector observations using the `symlog` functions**, both for 
+        - **the encoder inputs** 
+        - and **the decoder targets** 
+    - and employs the `symexp twohot loss` for 
+        - **the reward predictor**
+        - and **critic** 
+
+- **We find that these techniques enable robust and fast learning across many diverse domains.** 
+
+- For critic learning, an alternative asymmetric transformation has previously been proposed, which we found less effective on average across domains. 
+    - **Unlike alternatives, `symlog` transformations avoid** 
+        - truncating large targets, 
+        - introducing non-stationary from normalization, 
+        - or adjusting network weights when new extreme values are detected.
+

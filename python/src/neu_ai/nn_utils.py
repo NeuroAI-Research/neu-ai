@@ -60,3 +60,37 @@ def one_hot_softmax(logits: tc.Tensor, noisy: bool, n_classes: int = None):
         softmax = logits.softmax(dim=-1)
         probs = hard_one_hot + softmax - softmax.detach()
     return probs.view(old_shape), logits
+
+
+def symlog(x):
+    # \text{symlog}(x) := \text{sign}(x) \ln(|x|+1)
+    return tc.sign(x) * tc.log(tc.abs(x) + 1)
+
+
+def symexp(x):
+    # \text{symexp}(x) := \text{sign}(x) (\exp(|x|) - 1)
+    return tc.sign(x) * (tc.exp(tc.abs(x)) - 1)
+
+
+class TwoHot:
+    def __init__(s, n_bins=32):
+        s.bins = symexp(tc.linspace(-20, 20, n_bins))
+
+    def decode(s, probs):
+        return tc.sum(probs * s.bins, dim=-1)
+
+    def encode(s, x: tc.Tensor):
+        assert s.bins[0] < x.min() <= x.max() < s.bins[-1]
+        i2 = tc.bucketize(x, s.bins)
+        i1 = i2 - 1
+        b1, b2 = s.bins[i1], s.bins[i2]
+        # p1 * b1 + (1 - p1) * b2 = x
+        p1 = (x - b2) / (b1 - b2)
+        p2 = 1 - p1
+        probs = tc.zeros((*x.shape, len(s.bins)))
+        probs.scatter_(-1, i1.unsqueeze(-1), p1.unsqueeze(-1))
+        probs.scatter_(-1, i2.unsqueeze(-1), p2.unsqueeze(-1))
+        return probs
+
+    def loss(s, logits, x_tar):
+        return cross_entropy(logits, probs=s.encode(x_tar))
