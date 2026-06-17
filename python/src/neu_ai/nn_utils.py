@@ -13,8 +13,12 @@ def mlp(sizes, Act=nn.ReLU, end=[]):
     return nn.Sequential(*(layers[:-1] + end))
 
 
-def to_np(x: tc.Tensor):
-    return x.detach().numpy()
+def to_np(x):
+    if isinstance(x, tc.Tensor):
+        return x.detach().numpy()
+    if isinstance(x, (list, tuple)):
+        return [to_np(v) for v in x]
+    return x
 
 
 def tensor(x):
@@ -22,9 +26,17 @@ def tensor(x):
         return tc.from_numpy(x).float()
     if isinstance(x, (list, tuple)):
         return [tensor(v) for v in x]
+    if callable(x):
+
+        def func(*args):
+            return tensor(x(*to_np(args)))
+
+        return func
 
 
-def opt_step(opt: tc.optim.Adam, loss: tc.Tensor):
+def opt_step(opt: tc.optim.Adam, loss: tc.Tensor, w={}):
+    if isinstance(loss, dict):
+        loss = sum(w[k] * loss[k] for k in loss)
     opt.zero_grad()
     loss.backward()
     opt.step()
@@ -39,11 +51,12 @@ def stack_rows(rows: List[List[tc.Tensor]], dim):
 
 
 def cross_entropy(logits: tc.Tensor, probs: tc.Tensor):
-    n = logits.shape[-1]
-    return F.cross_entropy(logits.view(-1, n), probs.view(-1, n))
+    assert logits.shape == probs.shape
+    logp = F.log_softmax(logits, dim=-1)
+    return -tc.sum(probs * logp, dim=-1).mean()
 
 
-def one_hot_softmax(logits: tc.Tensor, noisy: bool, n_classes: int = None):
+def onehot_softmax(logits: tc.Tensor, noisy: bool, n_classes: int = None):
     """returns one-hot, but differentiable as softmax"""
     new_shape = old_shape = logits.shape
     n_classes = old_shape[-1] if n_classes is None else n_classes
@@ -73,11 +86,14 @@ def symexp(x):
 
 
 class TwoHot:
-    def __init__(s, n_bins=32):
+    def __init__(s, n_bins):
         s.bins = symexp(tc.linspace(-20, 20, n_bins))
 
     def decode(s, probs):
         return tc.sum(probs * s.bins, dim=-1)
+
+    def decode_logits(s, logits):
+        return s.decode(probs=F.softmax(logits, dim=-1))
 
     def encode(s, x: tc.Tensor):
         assert s.bins[0] < x.min() <= x.max() < s.bins[-1]
@@ -92,5 +108,10 @@ class TwoHot:
         probs.scatter_(-1, i2.unsqueeze(-1), p2.unsqueeze(-1))
         return probs
 
-    def loss(s, logits, x_tar):
+    def loss(s, logits: tc.Tensor, x_tar: tc.Tensor):
+        assert logits.shape == (*x_tar.shape, len(s.bins))
         return cross_entropy(logits, probs=s.encode(x_tar))
+
+    def init(s, m: nn.Linear):
+        nn.init.zeros_(m.weight)
+        nn.init.zeros_(m.bias)
