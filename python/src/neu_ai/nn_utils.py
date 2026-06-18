@@ -5,6 +5,8 @@ import torch as tc
 import torch.nn as nn
 import torch.nn.functional as F
 
+BCE_logits = F.binary_cross_entropy_with_logits
+
 
 def mlp(sizes, Act=nn.ReLU, end=[]):
     layers = []
