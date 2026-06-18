@@ -1,30 +1,35 @@
 from typing import List
 
-import numba
+import gymnasium as gym
 import numpy as np
 import torch as tc
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical, Normal, kl_divergence
+from torch.optim import Adam
+from tqdm import tqdm
 
 from neu_ai.nn_utils import (
     TwoHot,
     cat,
     mlp,
     onehot_softmax,
+    opt_step,
     stack_rows,
     symlog,
     tensor,
     to_np,
 )
+from neu_ai.plot import plot1
+from neu_ai.rl.RLBase import RLBase
+from neu_ai.utils import shape
 
 
 class RSSMWorldModel(nn.Module):
     def __init__(s, dims_XA_ZH: List[int]):
         super().__init__()
-        s.dims_XA_ZH = dims_XA_ZH
+        X, A, Z, H = s.dims_XA_ZH = dims_XA_ZH
         s.twohot = TwoHot(64)
-        X, A, Z, H = s.dims_XA_ZH
         s.z_n_classes = int(np.sqrt(Z))
         assert s.z_n_classes**2 == Z
 
@@ -46,16 +51,15 @@ class RSSMWorldModel(nn.Module):
         B, T, X = x.shape
         X, A, Z, H = s.dims_XA_ZH
         h_t = tc.zeros(B, H)
-        z_t = tc.zeros(B, Z)
+        z_t, _ = s.get_z(s.dyn_h_2_zp(h_t))
         rows = []
         for t in range(T):
-            x_t = x[:, t]
             a_prev = a[:, t - 1] if t > 0 else tc.zeros(B, A)
             h_t = s.rnn_zah_2_h(cat(z_t, a_prev), h_t)
             # dynamics predictor (prior)
             zp_t, zp_lg = s.get_z(s.dyn_h_2_zp(h_t))
             # encoder (posterior)
-            z_t, z_lg = s.get_z(s.enc_hx_2_z(cat(h_t, x_t)))
+            z_t, z_lg = s.get_z(s.enc_hx_2_z(cat(h_t, x[:, t])))
             hz_t = cat(h_t, z_t)
             rows.append([z_lg, zp_lg, hz_t])
         return stack_rows(rows, dim=1)
@@ -79,8 +83,8 @@ class RSSMWorldModel(nn.Module):
 def RSSM_KL(logits_P, logits_Q, min=1):
     P = Categorical(logits=logits_P)
     Q = Categorical(logits=logits_Q)
-    kl = kl_divergence(P, Q).sum(-1)
-    return tc.clip(kl, min=min).mean()
+    kl = kl_divergence(P, Q)
+    return tc.clip(kl.sum(-1), min=min).mean()
 
 
 # =======================================
@@ -93,26 +97,23 @@ class DreamerV3Critic(nn.Module):
         s.net = mlp([d_s, 64, 64, len(s.twohot.bins)])
         s.twohot.init(s.net[-1])
 
-    def forward(s, s_t):
-        return s.twohot.decode_logits(s.net(s_t))
-
-    def loss(s, s_t, R_tar):
+    def loss(s, s_t, r, term, gamma, lam):
         logits = s.net(s_t)
-        return s.twohot.loss(logits, R_tar)
+        with tc.no_grad():
+            v = s.twohot.decode_logits(logits)
+            R_tar = dreamerV3_R(r, term, v, gamma, lam)
+        loss = s.twohot.loss(logits, R_tar)
+        return loss, v, R_tar
 
 
-@tensor
-@numba.njit
-def dreamerV3_R(r: np.ndarray, term, v, gamma, lam):
+def dreamerV3_R(r: tc.Tensor, term, v, gamma, lam):
     c = 1 - term
     B, T = r.shape
-    R = np.zeros_like(r)
-    for t in range(T - 1, -1, -1):
-        if t == T - 1:
-            R[:, t] = v[:, t]
-        else:
-            mix = (1 - lam) * v[:, t] + lam * R[:, t + 1]
-            R[:, t] = r[:, t] + gamma * c[:, t] * mix
+    R = tc.zeros_like(r)
+    R[:, T - 1] = v[:, T - 1]
+    for t in range(T - 2, -1, -1):
+        mix = (1 - lam) * v[:, t] + lam * R[:, t + 1]
+        R[:, t] = r[:, t] + gamma * c[:, t] * mix
     return R
 
 
@@ -151,3 +152,76 @@ class DreamerV3Actor(nn.Module):
         if s.act_type is float:
             logp, H = logp.sum(-1), H.sum(-1)
         return dict(pi=-(A * logp).mean(), H=-H.mean())
+
+
+# =================================
+
+
+class DreamerV3_2023(RLBase):
+    n_rand_step = int(1e6)
+    D_size = 1000
+
+    T = 20
+    loss_w = dict(xp=1, rp=1, cp=1, dyn=1, rep=0.1, vp=1, vp_mse=0, pi=1, H=3e-4)
+    gamma = 0.99
+    lam = 0.95
+
+    def __init__(s, env, seed=0):
+        d_obs, d_act, act_type = s.init(env, seed)
+        dims_XA_ZH = [d_obs, d_act, 16 * 16, 64]
+        d_s = sum(dims_XA_ZH[-2:])
+
+        s.wm = RSSMWorldModel(dims_XA_ZH)
+        s.v = DreamerV3Critic(d_s)
+        s.pi = DreamerV3Actor([d_s, 64, 64, d_act], act_type)
+        s.wm_opt = Adam(s.wm.parameters())
+        s.v_opt = Adam(s.v.parameters())
+        s.pi_opt = Adam(s.pi.parameters())
+
+    def test(s):
+        # 1. collect experience
+        for i in range(s.D_size):
+            s.step_env()
+        B = int(s.D_size / s.T)
+        D = [tensor(v).view(B, s.T, *v.shape[1:]) for v in s.D]
+        print(shape(D))
+        x_raw, a, r, x_raw_next, term, trunc = D
+
+        # 2. train world model
+        rows = []
+        for i in tqdm(range(1000)):
+            losses = s.wm.loss(x_raw, a, r, term)
+            opt_step(s.wm_opt, losses, s.loss_w)
+            rows.append(losses)
+        data = {k: np.array([r[k].item() for r in rows]) for k in rows[0]}
+
+        # 3. evaluate world model
+        with tc.no_grad():
+            z_lg, zp_lg, hz = s.wm(x_raw, a)
+        print(shape([z_lg, zp_lg, hz]))
+        data["z.img"] = to_np(hz)[0, 0, 64:].reshape((16, 16))
+        plot1(data, "temp")
+
+        # 4. train critic
+        rows = []
+        for i in tqdm(range(1000)):
+            loss, v, R_tar = s.v.loss(hz, r, term, s.gamma, s.lam)
+            opt_step(s.v_opt, loss)
+            rows.append(loss.item())
+        data["vp"] = np.array(rows)
+        plot1(data, "temp")
+
+        # 5. train actor
+        rows = []
+        for i in tqdm(range(1000)):
+            losses = s.pi.loss(hz, a, R_tar, v)
+            opt_step(s.pi_opt, losses, s.loss_w)
+            rows.append(losses)
+        data3 = {k: np.array([r[k].item() for r in rows]) for k in rows[0]}
+        data.update(data3)
+        plot1(data, "temp")
+
+
+if __name__ == "__main__":
+    dreamer = DreamerV3_2023(env=gym.make("HalfCheetah-v5"))
+    dreamer.test()
