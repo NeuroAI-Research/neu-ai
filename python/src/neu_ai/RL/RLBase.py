@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 import gymnasium as gym
 import numpy as np
@@ -6,6 +6,7 @@ import torch as tc
 from gymnasium.spaces import Box, Discrete
 
 from neu_ai.nn_utils import tensor, to_np
+from neu_ai.plot import plot1
 
 
 class RLBase:
@@ -20,8 +21,10 @@ class RLBase:
 
         s.D: List[np.ndarray] = []
         s.D_cnt = 0
+        s.records = []
 
         s.s_t = s.env.reset(seed=seed)[0]
+        s.reset_agent()
         s.eps_ret, s.eps_len = 0, 0
 
         d_obs = env.observation_space.shape[0]
@@ -31,6 +34,9 @@ class RLBase:
         elif isinstance(sp, Discrete):
             d_act, act_type = sp.n, int
         return d_obs, d_act, act_type
+
+    def reset_agent(s):
+        pass
 
     def get_act(s, s_t: tc.Tensor) -> tc.Tensor:
         raise NotImplementedError
@@ -47,6 +53,7 @@ class RLBase:
         s.eps_len += 1
         if term or trunc:
             s.s_t = s.env.reset()[0]
+            s.reset_agent()
             print(f"step: {s.D_cnt}, episode len: {s.eps_len}, return: {s.eps_ret}")
             s.eps_ret, s.eps_len = 0, 0
         else:
@@ -69,3 +76,17 @@ class RLBase:
         high = min(s.D_cnt, s.D_size)
         indices = np.random.choice(high, size, replace=False)
         return [v[indices] for v in s.D]
+
+    def sample_BT(s, B, T):
+        if B + T > s.D_cnt:
+            raise Exception(f"requested (B, T): {(B, T)}, available: {s.D_cnt}")
+        high = min(s.D_cnt, s.D_size) - T
+        starts = np.random.choice(high, B, replace=False)
+        return [np.array([v[i : i + T] for i in starts]) for v in s.D]
+
+    def record(s, dic: Dict[str, tc.Tensor]):
+        s.records.append({k: v.item() for k, v in dic.items()})
+
+    def plot_records(s, id):
+        data = {k: np.array([r[k] for r in s.records]) for k in s.records[0]}
+        plot1(data, id)

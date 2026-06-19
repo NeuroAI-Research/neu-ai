@@ -196,8 +196,9 @@ $$
     - The critic learns to predict the distribution of the return estimates $R_t^\lambda$ using the NLL loss:
 
     $$ L(\psi) := - \sum_{t=1}^T \ln p_\psi(R_t^\lambda | s_t) \\[5pt]
-    R_t^\lambda := r_t + \gamma c_t \left( (1-\lambda)v_t + \lambda R_{t+1}^\lambda \right) \quad R_T^\lambda := v_T $$
+    R_t^\lambda := r_t + \gamma c_t \left( (1-\lambda) \boxed{\color{red} v_{t+1}} + \lambda R_{t+1}^\lambda \right) \quad R_T^\lambda := v_T $$
 
+    - **Note: the paper uses $v_t$ instead of $v_{t+1}$ above, which I believe is a typo**
     - **While a simple choice would be to parameterize the critic as a Normal distribution, the return distribution can have multiple modes and vary by orders of magnitude across environments.** 
     - **To stabilize and accelerate learning under these conditions, we parameterize the critic as `categorical distribution with exponentially spaced bins`, decoupling the scale of gradients from the prediction targets as described later.** 
     - To improve value prediction in environments where rewards are challenging to predict, we apply the critic loss both 
