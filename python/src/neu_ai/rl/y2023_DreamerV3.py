@@ -18,7 +18,7 @@ from neu_ai.nn_utils import (
     symlog,
     tensor,
 )
-from neu_ai.rl.RLBase import RLBase
+from neu_ai.rl.m1_RLBase import RLBase
 
 
 def RSSM_KL(logits_P, logits_Q, min=1):

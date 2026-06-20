@@ -10,7 +10,7 @@ from torch.distributions import Normal
 from torch.optim import Adam
 
 from neu_ai.nn_utils import mlp, opt_step, tensor
-from neu_ai.rl.RLBase import RLBase
+from neu_ai.rl.m1_RLBase import RLBase
 
 
 class SACNormalPi(nn.Module):

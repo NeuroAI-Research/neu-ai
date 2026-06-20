@@ -8,7 +8,7 @@ from torch.distributions import Categorical, Normal
 from torch.optim import Adam
 
 from neu_ai.nn_utils import mlp, opt_step, tensor, to_np
-from neu_ai.rl.RLBase import RLBase
+from neu_ai.rl.m1_RLBase import RLBase
 
 
 class PPOPi(nn.Module):
