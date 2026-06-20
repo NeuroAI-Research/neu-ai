@@ -1,15 +1,14 @@
 from typing import List
 
 import gymnasium as gym
-import numpy as np
 import torch as tc
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical, Normal, kl_divergence
 from torch.optim import Adam
-from tqdm import tqdm
 
 from neu_ai.nn_utils import (
+    BCE_logits,
     TwoHot,
     cat,
     mlp,
@@ -18,66 +17,8 @@ from neu_ai.nn_utils import (
     stack_rows,
     symlog,
     tensor,
-    to_np,
 )
-from neu_ai.plot import plot1
 from neu_ai.rl.RLBase import RLBase
-from neu_ai.utils import shape
-
-
-class RSSMWorldModel(nn.Module):
-    def __init__(s, dims_XA_ZH: List[int]):
-        super().__init__()
-        X, A, Z, H = s.dims_XA_ZH = dims_XA_ZH
-        s.twohot = TwoHot(64)
-        s.z_n_classes = int(np.sqrt(Z))
-        assert s.z_n_classes**2 == Z
-
-        s.rnn_zah_2_h = nn.GRUCell(Z + A, H)
-        s.enc_hx_2_z = nn.Linear(H + X, Z)
-        s.dyn_h_2_zp = nn.Linear(H, Z)
-        s.rew_hz_2_rp = nn.Linear(H + Z, len(s.twohot.bins))
-        s.con_hz_2_cp = nn.Linear(H + Z, 1)
-        s.dec_hz_2_xp = nn.Linear(H + Z, X)
-
-        s.twohot.init(s.rew_hz_2_rp)
-
-    def get_z(s, logits):
-        noisy = s.training
-        return onehot_softmax(logits, noisy, s.z_n_classes)
-
-    def forward(s, x_raw: tc.Tensor, a):
-        x = symlog(x_raw)
-        B, T, X = x.shape
-        X, A, Z, H = s.dims_XA_ZH
-        h_t = tc.zeros(B, H)
-        z_t, _ = s.get_z(s.dyn_h_2_zp(h_t))
-        rows = []
-        for t in range(T):
-            a_prev = a[:, t - 1] if t > 0 else tc.zeros(B, A)
-            h_t = s.rnn_zah_2_h(cat(z_t, a_prev), h_t)
-            # dynamics predictor (prior)
-            zp_t, zp_lg = s.get_z(s.dyn_h_2_zp(h_t))
-            # encoder (posterior)
-            z_t, z_lg = s.get_z(s.enc_hx_2_z(cat(h_t, x[:, t])))
-            hz_t = cat(h_t, z_t)
-            rows.append([z_lg, zp_lg, hz_t])
-        return stack_rows(rows, dim=1)
-
-    def loss(s, x_raw, a, r, term):
-        assert x_raw.shape[:-1] == a.shape[:-1] == r.shape == term.shape
-        c = tc.unsqueeze(1 - term, -1)
-        z_lg, zp_lg, hz = s(x_raw, a)
-        rp_lg = s.rew_hz_2_rp(hz)
-        cp_lg = s.con_hz_2_cp(hz)
-        xp = s.dec_hz_2_xp(hz)
-        return dict(
-            rp=s.twohot.loss(rp_lg, r),
-            cp=F.binary_cross_entropy_with_logits(cp_lg, c),
-            xp=F.mse_loss(xp, symlog(x_raw)),
-            dyn=RSSM_KL(tc.detach(z_lg), zp_lg),
-            rep=RSSM_KL(z_lg, tc.detach(zp_lg)),
-        )
 
 
 def RSSM_KL(logits_P, logits_Q, min=1):
@@ -87,141 +28,153 @@ def RSSM_KL(logits_P, logits_Q, min=1):
     return tc.clip(kl.sum(-1), min=min).mean()
 
 
-# =======================================
+class DreamerV3(nn.Module, RLBase):
+    n_rand_step = int(1e4)
+    D_size = int(1e6)
 
-
-class DreamerV3Critic(nn.Module):
-    def __init__(s, d_s):
-        super().__init__()
-        s.twohot = TwoHot(64)
-        s.net = mlp([d_s, 64, 64, len(s.twohot.bins)])
-        s.twohot.init(s.net[-1])
-
-    def loss(s, s_t, r, term, gamma, lam):
-        logits = s.net(s_t)
-        with tc.no_grad():
-            v = s.twohot.decode_logits(logits)
-            R_tar = dreamerV3_R(r, term, v, gamma, lam)
-        loss = s.twohot.loss(logits, R_tar)
-        return loss, v, R_tar
-
-
-def dreamerV3_R(r: tc.Tensor, term, v, gamma, lam):
-    c = 1 - term
-    B, T = r.shape
-    R = tc.zeros_like(r)
-    R[:, T - 1] = v[:, T - 1]
-    for t in range(T - 2, -1, -1):
-        mix = (1 - lam) * v[:, t] + lam * R[:, t + 1]
-        R[:, t] = r[:, t] + gamma * c[:, t] * mix
-    return R
-
-
-# ===================================
-
-
-class DreamerV3Actor(nn.Module):
-    S = 1.0
+    dream_T = 15
+    loss_w = dict(z_enc=0.1, zp_dyn=1, rp=1, cp=1, xp=1, vp=1, pi=1, H=3e-4)
+    gamma = 0.997
+    lam = 0.95
+    S_A = 1
     r_EMA = 0.99
 
-    def __init__(s, sizes, act_type):
+    def __init__(s, env, seed=0):
         super().__init__()
-        s.act_type = act_type
-        if act_type is float:
-            sizes[-1] *= 2
-        s.net = mlp(sizes)
+        s.twohot = TwoHot(64)
+        s.H = H = 64
+        s.z_nc = 16
 
-    def get_dist(s, s_t: tc.Tensor):
-        logits = s.net(s_t)
-        if s.act_type is float:
-            mu, std = tc.chunk(logits, 2, dim=-1)
-            std = F.softplus(std) + 1e-4
-            return Normal(mu, std)
-        return Categorical(logits=logits)
+        Z = s.z_nc**2
+        X, A, s.act_type = s.init(env, seed)
 
-    def update_S(s, R_t):
-        R_t = to_np(R_t)
-        delta_R = np.percentile(R_t, 95) - np.percentile(R_t, 5)
-        s.S = s.r_EMA * s.S + (1 - s.r_EMA) * delta_R
+        s.rnn_zah_2_h = nn.GRUCell(Z + A, H)
+        s.enc_hx_2_z = nn.Linear(H + X, Z)
+        s.dyn_h_2_zp = nn.Linear(H, Z)
+        s.rew_hz_2_rp = nn.Linear(H + Z, len(s.twohot.bins))
+        s.con_hz_2_cp = nn.Linear(H + Z, 1)
+        s.dec_hz_2_xp = nn.Linear(H + Z, X)
 
-    def loss(s, s_t, a_t, R_t, v_t):
-        A = tc.detach((R_t - v_t) / max(1, s.S))
-        dist = s.get_dist(s_t)
-        logp = dist.log_prob(a_t)
-        H = dist.entropy()
+        s.cri_hz_2_vp = nn.Linear(H + Z, len(s.twohot.bins))
+        a_out = A if s.act_type is int else A * 2
+        s.act_hz_2_a = mlp([H + Z, 64, 64, a_out])
+
+        s.twohot.init(s.rew_hz_2_rp)
+        s.twohot.init(s.cri_hz_2_vp)
+        s.wm_opt = Adam(s.parameters())
+        s.ac_opt = Adam([*s.cri_hz_2_vp.parameters(), *s.act_hz_2_a.parameters()])
+
+    def run(s):
+        for _ in range(s.n_rand_step):
+            s.step_env()
+        for i in range(500):
+            for _ in range(100):
+                s.step_env()
+            for _ in range(50):
+                D = tensor(s.sample_BT(16, 32))
+                wm_losses, h_t, z_t = s.wm_losses(D)
+                opt_step(s.wm_opt, wm_losses, s.loss_w)
+
+                hz, a, rp, cp = s.dream(h_t, z_t)
+                ac_losses = s.ac_losses(hz, a, rp, cp)
+                opt_step(s.ac_opt, ac_losses, s.loss_w)
+
+                s.record({**wm_losses, **ac_losses})
+            if i % 10 == 0:
+                s.plot_records("temp")
+
+    def get_z(s, logits):
+        noisy = s.training
+        return onehot_softmax(logits, noisy, s.z_nc)
+
+    def wm_losses(s, D: List[tc.Tensor]):
+        x_raw, a, r, x_raw_next, term, trunc = D
+        x = symlog(x_raw)
+        c = 1 - term.unsqueeze(-1)
+        not_end = (1 - term) * (1 - trunc)
+        B, T, _ = x.shape
+        rows = []
+        z_t = None
+        for t in range(T):
+            if t == 0:
+                h_t = tc.zeros(B, s.H)
+            else:
+                h_t = s.rnn_zah_2_h(cat(z_t, a[:, t - 1]), h_t)
+                h_t = h_t * not_end[:, t - 1, None]
+            z_t, z_lg = s.get_z(s.enc_hx_2_z(cat(h_t, x[:, t])))
+            rows.append([h_t, z_t, z_lg])
+        h, z, z_lg = stack_rows(rows, dim=1)
+        hz = cat(h, z)
+        zp, zp_lg = s.get_z(s.dyn_h_2_zp(h))
+        wm_losses = dict(
+            z_enc=RSSM_KL(z_lg, tc.detach(zp_lg)),
+            zp_dyn=RSSM_KL(tc.detach(z_lg), zp_lg),
+            rp=s.twohot.loss(s.rew_hz_2_rp(hz), r),
+            cp=BCE_logits(s.con_hz_2_cp(hz), c),
+            xp=F.mse_loss(s.dec_hz_2_xp(hz), x),
+        )
+        return wm_losses, h_t, z_t
+
+    @tc.no_grad()
+    def dream(s, h_t, zp_t):
+        rows = []
+        a_t = s.get_pi(cat(h_t, zp_t)).sample()
+        for t in range(s.dream_T):
+            h_t = s.rnn_zah_2_h(cat(zp_t, a_t), h_t)
+            zp_t, zp_lg = s.get_z(s.dyn_h_2_zp(h_t))
+            a_t = s.get_pi(cat(h_t, zp_t)).sample()
+            rows.append([h_t, zp_t, a_t])
+        h, zp, a = stack_rows(rows, dim=1)
+        hz = cat(h, zp)
+        rp = s.twohot.decode_logits(s.rew_hz_2_rp(hz))
+        cp = tc.sigmoid(s.con_hz_2_cp(hz)).squeeze(-1)
+        return hz, a, rp, cp
+
+    def ac_losses(s, hz, a, rp, cp):
+        # critic:
+        vp_lg = s.cri_hz_2_vp(hz)
+        vp = s.twohot.decode_logits(vp_lg)
+        Rp = s.get_R(rp, cp, vp)
+        # actor:
+        R_range = tc.quantile(Rp, 0.95) - tc.quantile(Rp, 0.05)
+        s.S_A = s.r_EMA * s.S_A + (1 - s.r_EMA) * R_range
+        A = tc.detach((Rp - vp) / max(1, s.S_A))
+        pi = s.get_pi(hz)
+        logp, H = pi.log_prob(a), pi.entropy()
         if s.act_type is float:
             logp, H = logp.sum(-1), H.sum(-1)
-        return dict(pi=-(A * logp).mean(), H=-H.mean())
+        return dict(vp=s.twohot.loss(vp_lg, Rp), pi=-(A * logp).mean(), H=-H.mean())
 
+    @tc.no_grad()
+    def get_R(s, rp: tc.Tensor, cp, vp):
+        B, T = rp.shape
+        R = [None] * T
+        R[T - 1] = vp[:, T - 1]
+        for t in range(T - 2, -1, -1):
+            mix = (1 - s.lam) * vp[:, t + 1] + s.lam * R[t + 1]
+            R[t] = rp[:, t] + s.gamma * cp[:, t] * mix
+        return tc.stack(R, dim=1)
 
-# =================================
+    def get_pi(s, hz):
+        a_lg = s.act_hz_2_a(hz)
+        if s.act_type is float:
+            mu, std = tc.chunk(a_lg, 2, dim=-1)
+            std = F.softplus(std) + 1e-4
+            return Normal(mu, std)
+        return Categorical(logits=a_lg)
 
+    def reset_agent(s):
+        s.h_t = tc.zeros(s.H)
 
-class DreamerV3_2023(RLBase):
-    n_rand_step = int(1e6)
-    D_size = 1000
-
-    T = 20
-    loss_w = dict(xp=1, rp=1, cp=1, dyn=1, rep=0.1, vp=1, vp_mse=0, pi=1, H=3e-4)
-    gamma = 0.99
-    lam = 0.95
-
-    def __init__(s, env, seed=0):
-        d_obs, d_act, act_type = s.init(env, seed)
-        dims_XA_ZH = [d_obs, d_act, 16 * 16, 64]
-        d_s = sum(dims_XA_ZH[-2:])
-
-        s.wm = RSSMWorldModel(dims_XA_ZH)
-        s.v = DreamerV3Critic(d_s)
-        s.pi = DreamerV3Actor([d_s, 64, 64, d_act], act_type)
-        s.wm_opt = Adam(s.wm.parameters())
-        s.v_opt = Adam(s.v.parameters())
-        s.pi_opt = Adam(s.pi.parameters())
-
-    def test(s):
-        # 1. collect experience
-        for i in range(s.D_size):
-            s.step_env()
-        B = int(s.D_size / s.T)
-        D = [tensor(v).view(B, s.T, *v.shape[1:]) for v in s.D]
-        print(shape(D))
-        x_raw, a, r, x_raw_next, term, trunc = D
-
-        # 2. train world model
-        rows = []
-        for i in tqdm(range(1000)):
-            losses = s.wm.loss(x_raw, a, r, term)
-            opt_step(s.wm_opt, losses, s.loss_w)
-            rows.append(losses)
-        data = {k: np.array([r[k].item() for r in rows]) for k in rows[0]}
-
-        # 3. evaluate world model
-        with tc.no_grad():
-            z_lg, zp_lg, hz = s.wm(x_raw, a)
-        print(shape([z_lg, zp_lg, hz]))
-        data["z.img"] = to_np(hz)[0, 0, 64:].reshape((16, 16))
-        plot1(data, "temp")
-
-        # 4. train critic
-        rows = []
-        for i in tqdm(range(1000)):
-            loss, v, R_tar = s.v.loss(hz, r, term, s.gamma, s.lam)
-            opt_step(s.v_opt, loss)
-            rows.append(loss.item())
-        data["vp"] = np.array(rows)
-        plot1(data, "temp")
-
-        # 5. train actor
-        rows = []
-        for i in tqdm(range(1000)):
-            losses = s.pi.loss(hz, a, R_tar, v)
-            opt_step(s.pi_opt, losses, s.loss_w)
-            rows.append(losses)
-        data3 = {k: np.array([r[k].item() for r in rows]) for k in rows[0]}
-        data.update(data3)
-        plot1(data, "temp")
+    def get_act(s, x_raw_t):
+        x_t = symlog(x_raw_t)
+        z_t, z_lg = s.get_z(s.enc_hx_2_z(cat(s.h_t, x_t)))
+        a_t = s.get_pi(cat(s.h_t, z_t)).sample()
+        # rows.append([h_t, z_t, a_t])
+        s.h_t = s.rnn_zah_2_h(cat(z_t, a_t), s.h_t)
+        return a_t
 
 
 if __name__ == "__main__":
-    dreamer = DreamerV3_2023(env=gym.make("HalfCheetah-v5"))
-    dreamer.test()
+    dreamer = DreamerV3(env=gym.make("HalfCheetah-v5"))
+    dreamer.run()

@@ -92,6 +92,13 @@ class TwoHot:
         s.bins = symexp(tc.linspace(-20, 20, n_bins))
 
     def decode(s, probs):
+        raise Exception("""
+For computing the expected prediction of the softmax distribution
+under bins that span many orders of magnitude, the summation order
+matters and positive and negative bins should be summed up
+separately, from small to large bins, and then added.
+Refer to the source code for an implementation.
+        """)
         return tc.sum(probs * s.bins, dim=-1)
 
     def decode_logits(s, logits):
