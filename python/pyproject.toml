@@ -22,6 +22,7 @@ dependencies = [
     "stable-baselines3[extra]",
     "sb3-contrib",
     "graphviz",
+    "pyperclip",
 ]
 requires-python = ">=3.9"
 
