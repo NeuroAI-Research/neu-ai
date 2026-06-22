@@ -1,4 +1,4 @@
-# 1 2017 Attention Is All You Need
+# 1 2017 Transformer
 
 - [Attention Is All You Need](https://arxiv.org/pdf/1706.03762)
 

@@ -34,3 +34,4 @@ extra_css:
 
 exclude_docs: |
   archives/
+  draft_*

@@ -1,5 +1,5 @@
 ---
-title: Creator (Ricky Ding)
+title: Creator (Ricky)
 ---
 
 # Ricky Ding

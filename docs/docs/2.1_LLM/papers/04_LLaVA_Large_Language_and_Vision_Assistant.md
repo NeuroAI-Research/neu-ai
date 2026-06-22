@@ -59,6 +59,8 @@
 
 ## 3 GPT-assisted Visual Instruction Data Generation
 
+![](../imgs/04_LLaVA_GPT-assisted_data.png)
+
 - The community has witnessed a surge in the amount of public multimodal data such as image-text pairs, ranging from CC to LAION. However, when it comes to multimodal instruction following data, the available amount is limited, partially because the process for creating such data is time-consuming and less well-defined when human crowd-scouring is considered. 
     - Inspired by the success of recent GPT models in text-annotation tasks, we propose to leverage ChatGPT/GPT-4 for multimodal instruction-following data collection, based on the widely existing image-pair data.
     - For an image $X_v$ and its associated caption $X_c$, it is natural to create a set of questions $X_q$ with the intent to instruct the assistant to describe the image content. We prompt GPT-4 to curate such a list of questions (see details in Appendix). 

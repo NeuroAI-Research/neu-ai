@@ -1,5 +1,72 @@
 # 1 2017 Transformer
 
+- [Full Version](./papers/01_Transformer.md)
+
+## 3 Model Architecture
+
+![](./imgs/01_Transformer_architecture.png){width=400}
+
+### 3.1 Encoder and Decoder Stacks
+
+- The **encoder** maps an input sequence of symbol representations $(x_1, ..., x_n)$ to a sequence of continuous representations $z = (z_1, ..., z_n)$. 
+- Given $z$, the **decoder** then generates an output sequence $(y_1, ..., y_m)$ of symbols one element at a time. 
+
+- In addition to the two sub-layers in each encoder layer, **the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.** 
+- **We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.** 
+
+### 3.2 Attention
+
+![](./imgs/01_Attention.png)
+
+- **The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.**
+
+#### 3.2.1 Scaled Dot-Product Attention
+
+- Queries and Keys: dim $d_k$, Values: dim $d_v$ 
+
+$$ \text{Attention}(Q, K, V) = \text{softmax}(
+{ Q K^T \over \sqrt{d_k} }) V $$
+
+- we scale by $1 / \sqrt{d_k}$ because for large values of $d_k$, the dot products grow large in magnitude, pushing the `softmax` function into regions where it has extremely small gradients
+
+#### 3.2.2 Multi-Head Attention
+
+- In the Transformer, the **number of operations required to relate signals from two arbitrary input or output positions** is reduced to a constant, albeit **at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention**
+- Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.
+
+$$
+\text{MultiHead}(Q, K, V ) = \text{Concat}(\text{head}_1, ..., \text{head}_h) W^O \\[5pt]
+\text{where } \text{ head}_i = \text{Attention}(QW^Q_i, KW^K_i, V W^V_i)
+$$
+
+- Where the projections are parameter matrices with **shapes**: 
+    - $W^Q_i, W^K_i \quad (d_\text{model}, d_k)$
+    - $W^V_i \quad (d_\text{model}, d_v)$
+    - $W^O \quad (h d_v, d_\text{model})$
+
+- In this work we employ $h = 8$ parallel attention layers, or heads. For each of these we use $d_k = d_v = d_\text{model}/h = 64$. 
+
+### 3.3 Position-wise Feed-Forward Networks
+
+$$ \text{FFN}(x) = \text{ReLU}(x W_1 + b_1) W_2 + b_2 $$
+
+### 3.5 Positional Encoding
+
+$$
+{2\pi \over \lambda} \equiv {1 \over 10000^{ 2i / d_\text{model} }} \\[5pt]
+PE_{(pos, 2i)} = \sin({2\pi \over \lambda} pos) \\[5pt]
+PE_{(pos, 2i+1)} = \cos({2\pi \over \lambda} pos)
+$$
+
+- where $pos$ is the position and $i$ is the dimension. 
+    - That is, each dimension of the positional encoding corresponds to a sinusoid. 
+    - The wavelengths form a geometric progression from $2\pi$ to $10000 \cdot 2\pi$. 
+- We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $k$, $PE_{pos+k}$ can be represented as a linear function of $PE_{pos}$.
+- We also experimented with using learned positional embeddings instead, and found that the two versions produced nearly identical results. We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.
+
+![](./imgs/01_Attention_vs_others.png)
+
+
 ## Upgrades
 
 ### 2021 RoPE: Rotary Positional Embeddings
