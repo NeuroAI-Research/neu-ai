@@ -41,3 +41,8 @@
 - [2017 PPO (119 lines)](https://github.com/NeuroAI-Research/neu-ai/blob/main/python/src/neu_ai/rl/y2017_PPO.py)
 - [2018 SAC (126 lines)](https://github.com/NeuroAI-Research/neu-ai/blob/main/python/src/neu_ai/rl/y2018_SAC.py)
 - [2023 DreamerV3 (180 lines)](https://github.com/NeuroAI-Research/neu-ai/blob/main/python/src/neu_ai/rl/y2023_DreamerV3.py)
+
+
+### SSL
+
+- [2022 FlowMatching (62 lines)](https://github.com/NeuroAI-Research/neu-ai/blob/main/python/src/neu_ai/ssl/y2022_FlowMatching.py)
