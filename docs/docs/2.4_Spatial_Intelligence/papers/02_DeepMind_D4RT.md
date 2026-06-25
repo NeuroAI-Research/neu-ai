@@ -1,5 +1,5 @@
 
-# 2 2025 D4RT: Dynamic 4D Reconstruction and Tracking 
+# 2 2025 DeepMind D4RT
 
 - [DeepMind: Efficiently Reconstructing Dynamic Scenes One D4RT at a Time](https://arxiv.org/pdf/2512.08924)
 
