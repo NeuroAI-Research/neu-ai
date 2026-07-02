@@ -22,7 +22,7 @@
 
 ### An Analogy to Technological Innovation: The Useful Concept of a “Breakthrough”
 
-![](../imgs/02_Breakthrough_concept.png)
+![](../imgs/02_1_Breakthrough_concept.png)
 
 - To elaborate on this idea, I will draw on an analogy to technological innovation. 
     - Consider the modifications and applications of a technological breakthrough such as the transition from gas-powered to electrically-powered households during the late 19th century. 
@@ -165,7 +165,7 @@
         - However, neither is necessarily the case. If "states" include interoceptive (内感受性的) information such as hunger level, then model-free learning can exhibit behavior that is sensitive to devaluation without any planning or playing out of future actions. 
         - Therefore, the proposal that early vertebrates were capable of model-free RL but not model-based RL does not suggest that all behavior of early vertebrates was habitual and insensitive to devaluation.
 
-![](../imgs/02_Model-Free_RL.png)
+![](../imgs/02_2_Model-Free_RL.png)
 
 - The main **four new brain structures** that emerged with early vertebrates were 
     - the pallium (大脑皮层), 
@@ -175,7 +175,7 @@
 
 - This entire network of new brain structures of early vertebrates can be reasonably understood through the lens of the emergence of model-free reinforcement learning with spatial maps and timing. 
 
-![](../imgs/02_AL_vs_RL.png)
+![](../imgs/02_3_AL_vs_RL.png)
 
 - Study Note: Bilaterian Associative Learning
     - Core Principle:
@@ -288,8 +288,8 @@
     - Learning is optimized to minimize such mismatches (i.e., minimize "prediction errors"). 
     - Hence these generative models are "self-supervised" — trained only by the degree with which their own model of reality has successfully predicted its own input.
 
-![](../imgs/02_Vertebrate_to_Mammal.png)
-![](../imgs/02_Neocortex_Simulation.png)
+![](../imgs/02_4_Vertebrate_to_Mammal.png)
+![](../imgs/02_5_Neocortex_Simulation.png)
 
 - The neocortex of early mammals had two broad sub-regions: the frontal cortex and the sensory cortex (see Figure 4). 
     - **The frontal cortex** in early mammals is believed to be homologous (同源的) to the anterior cingulate cortex (ACC, 前扣带皮层) of later mammals (Laubach et al., 2018; van Heukelum et al., 2020). 
@@ -341,4 +341,65 @@
         - Without a spatial map, it would be impossible to simulate various movements and their consequences.
     - **Secondarily, internally invoked simulations work by training the basal ganglia vicariously — the basal ganglia does not have to tell the difference between an internally invoked or externally invoked sensory data from the sensory cortex, it merely learns what sequences of movements trigger dopamine release.** 
     - **This ability to learn vicariously was only possible because it was built on top of the foundation of the older basal ganglia.**
+
+
+### 4 Mentalizing in Early Primates (灵长类)
+
+- The hypothesis here is that the unique brain regions that emerged in early primates facilitated the singular breakthrough of "mentalizing," which was thereby applied in multiple adaptive ways.
+
+- By "mentalizing" I refer to the ability to **construct a model of the mind, inclusive of an individual's intent and knowledge.**
+    - Such a model of mind can be applied in multiple ways — three such ways are 
+        - **anticipating future needs** 
+        - **theory of mind** 
+        - **learning skills through observation** 
+    - All three of these can be seen merely as different applications of this singular ability of primates to engage in "mentalizing." 
+    
+- For example, mentalizing can be used to 
+    - simulate a mind state of yourself that you do not have yet (imagining being hungry tomorrow if I do not gather food now, even though I am not hungry right now). 
+    - simulate the mind state of another conspecific (同种个体) you are observing (such as imagining how they must feel given their situation). 
+    - simulate the intentions and actions of others when you are watching them do various motor skills, which enables you to "learn by observation." 
+- The behavioral manifestations are different, but the neural substrates are overlapping for a reason: the overall function is the same (**simulating a mind state**).
+
+- The primary two new brain structures that emerged in early primates were the 
+    - **granular prefrontal cortex (gPFC)**
+    - **polysensory cortex (PSC)**
+
+![](../imgs/02_6_Mammal_to_Primate.png)
+
+- An interpretation of how granular prefrontal cortex and PSC enabled such mentalizing is as follows (see Figure 6). 
+    - gPFC gets its inputs from three primary sources: 
+        - it is bidirectionally connected with the **ACC**, both directly and through the mediodorsal thalamus;
+        - gPFC is interconnected with polysensory areas such as the superior temporal cortex and TPJ; 
+        - it is interconnected with motor cortex both directly and indirectly through descending loops through the motor thalamus 
+- **I hypothesize that gPFC and PSC together implement a generative model of the ACC-sensory generative model itself.** 
+    - In other words, the gPFC-PSC generative model is constructed to "explain" the "intentions" from the ACC given "knowledge" from PSC. 
+    - The emergent property of this is that it is effectively a generative model of one’s own "mind," the use of which can be thought of as "mentalizing".
+
+- When applying this gPFC-PSC network to "mentalizing about oneself," an animal can anticipate a need it does not currently feel yet. 
+    - One big difference between the ACC-sensory network and the gPFC-PSC network is that the ACC-sensory network is **self-supervised** to predict amygdala and hypothalamic activation, while the gPFC-PSC is self-supervised to predict **latent representations** within ACC-sensory network. 
+    - The ACC-sensory network can predict paths that accomplish the needs currently experienced. 
+    - On the other hand, gPFC-PSC network can simulate situations in the future and predict what intentions would be selected in the ACC-sensory network given such situations. 
+    - The ACC-sensory network can’t do this because it is supervised to predict amygdala activation, which is therefore only sensitive to current needs. 
+    - One reason this new network was adaptive was because it enabled early primates to anticipate future needs and hence plan much more flexibly than the mammals that came before. 
+    - **Practically, this enables primates such as humans to go to the grocery store and pick up food for the week even when they are not yet hungry — or to bring a jacket on a trip even though they are not yet cold.** 
+    - **This ability to "anticipate future needs" was originally thought to be unique to humans, summarized as the Bischof-Kohler Hypothesis (Bischof-Köhler, 1985), but this model proposes that it in fact evolved in early primates, which as we will see in later sections is consistent with more recent tests in nonhuman primates and non-primate mammals.**
+
+- Once a generative model of one’s own mind exists, it can be applied not only to "mentalizing about oneself" but also to "mentalizing about others". 
+    - Because the gPFC-PSC network is a model of what behaviors are generated from what intentions and knowledge, it can be applied to trying to identify what intentions and knowledge in others are consistent with their observed behaviors. 
+    - The same way that the ACC-sensory system pauses and simulates objects and paths, the gPFC-PSC system can pause and simulate intentions and knowledge of others to generate a latent representation most consistent with the observed behavior.
+    - This mentalizing about others can manifest itself in several ways.
+        - First, it can be used in the basic theory of mind tasks to infer the knowledge of others given their perspective. 
+        - And second, it can be used to learn motor skills through observation.
+
+- One attractive feature of this proposal of the gPFC-PSC network is that it fits within the conceptualization of the **neocortical microcircuit.** 
+    - Given the observation that the **neocortical column** seems **remarkably uniform** throughout the neocortex (Mountcastle, 1978), **any purported (声称的) new "function" attributed to a new neocortical region should be primarily a consequence of unique inputs and outputs, as opposed to any changes in the underlying computations of the neocortical column.** 
+    - Consistent with this, the idea here is that the microcircuitry of the granular prefrontal cortex is the same as that of the ACC and sensory cortex: **it is still implementing a generative model.The difference is merely where it receives input from.** 
+        - The ACC constructs a model getting bottom-up input from the **hippocampus**. 
+            - The latent representation in the ACC is then a representation of an animal’s current intent (intent is an "explanation" of an observed path), which is used to make predictions of subsequent navigational paths. 
+        - In contrast, the granular prefrontal cortex gets bottom-up input from the **ACC**. 
+            - The latent representation in the granular prefrontal cortex is then a representation of a mind state (mind state is an "explanation of an intent") which is then used to construct make predictions about one’s own or others’ intent.
+
+- Crucially, simulating mind states (mentalizing) in early primates was only possible because of the inherited ability to simulate world states that evolved in earlier mammals.
+    - Mentalizing was built on the foundation of simulating world states. 
+    - The model here proposes that **mentalizing network itself is a model of the mammalian ACC-sensory network**, literally built on top of the evolutionarily older brain structures.
 
