@@ -403,3 +403,162 @@
     - Mentalizing was built on the foundation of simulating world states. 
     - The model here proposes that **mentalizing network itself is a model of the mammalian ACC-sensory network**, literally built on top of the evolutionarily older brain structures.
 
+
+### 5 Speaking in Early Humans
+
+- The hypothesis here is that the unique brain regions that emerged in early humans facilitated the singular breakthrough of "speaking," which was thereby applied for language and music.
+
+- By "speaking" I do not refer only to vocal communication, but broadly to semantic rhythmic communication in general.
+    - Human brains, although bigger, are remarkably similar to the primate brains that came before. 
+    - However, one fundamental difference that seemed to emerge was a modification to the **Arcuate Fasciculus (弓状束)** and its connectivity with the **Basal Ganglia ("AF-BG network")**. 
+    - I hypothesize, as have others, that the neural innovations for language and music emerge from the unique connectivity of the arcuate fasciculus, as well as perhaps other additional connectivity with the striatum.
+    - **This has been the classic view of language since the time of Wernicke.** 
+    - More modern theories of language have criticized the simplicity of this original model and proposed additional structures. 
+    - I do not make any specific claim on the exact mechanisms of language production, merely that language and music were emergent properties only possible with the additional connectivity of the arcuate fasciculus.
+
+- The view here is that music and language are two sides of the same coin and emerge from the same neural innovations. 
+    - There is an intuitive appeal to this hypothesis, as both music and language share many features. 
+        - Both require rhythmic entertainment coordinated with other conspecifics. In other words, "beat perception" is necessary for both music and for taking turns appropriately in a conversation. 
+        - Both are hierarchical and nested — music contains beats within "bars" within "phrases," and language contains phonemes within words within sentences. 
+        - Both are highly "predictive" — when you hear an unfinished sentence such as "the ford mustang is my favorite ...," you cannot help but finish it. This is the same for music, when you hear an unresolved musical phrase.
+
+- In the context of this model, one explanation for the ordering of these breakthroughs is that such rhythmic semantic processing for communication was only possible after the breakthrough of "mentalizing". 
+    - Only with the ability to infer and understand the knowledge of others is one able to devise a reasonable communication to transfer information to someone. 
+    - Consistent with this, the AF-BG network is very overlapping with the mentalizing regions that came before.
+
+### Model Summary
+
+![](../imgs/02_7_5_Breakthroughs.png)
+
+- In Figure 7, you can see a summary of the proposed five breakthroughs, and the modifications and behaviors they explain. You can also see the homologous regions in human brains.
+
+- As previously mentioned, one attractive feature of this model of five breakthroughs is that it incorporates evolutionary constraints and thereby helps understand how neural innovations build on each other. 
+    - Consider the following dependencies suggested by this model.
+
+- **Steering** in early bilaterians was only possible because of the neural building blocks that emerged earlier in eumetazoans, which provided all-or-nothing neurons with sensory cells and muscle cells. 
+    - It provided inhibitory and excitatory neurons for the creation of neural circuits, and neuropeptides for the modulation of neural responses based on internal states.
+
+- **Reinforcing (model-free RL)** in early vertebrates was only possible because of the features of steering in the ancestral bilaterian brain. 
+    - The core mechanism for learning sequences of places is the temporal-difference learning mechanism which bootstraps these learned responses on hardcoded valence responses. 
+    - Ancestral bilaterians had such valence responses that could stimulate the release of various neuromodulators. 
+    - The pallial-BG-tectal circuit could then build plastic networks on top of these basic valence responses to enable learning more complex sequences of paths. 
+    - This is consistent with other interpretations of behavior as evolving (through phylogeny and ontogeny) from the basic foundation of approach and withdrawal.
+
+- **Simulating (model-based RL)** in early mammals was only possible because of model-free reinforcement learning in ancestral vertebrate brains.
+    - Simulating requires: 
+        - a "pointer" to a specific suite of stimuli; and 
+        - a mechanism for manipulating key features of the stimuli once invoked.
+    - The spatial map in the pallial hippocampus provided both of these features — internally invoking a "place" in the pallial hippocampus will reactivate a broad suite of learned responses to that place. 
+    - Further, the ability to tether different places together and generate novel paths, enables the pallial hippocampus, if it were internally invoked, to imagine "novel" paths. 
+    - **It is then no surprise that the neocortex is, in some ways, built directly on top of the much older hippocampus, and uses the hippocampus for its simulating functions, such as VTE and episodic memory.**
+
+- **Mentalizing** in early primates was only possible because simulating in ancestral mammal brains came first. 
+    - In the model described here, mentalizing is computationally the same as simulating, the only difference being that mentalizing uses a generative model of the mind itself, requiring new neocortical regions and new connectivity between them. 
+    - Mentalizing could only occur after there was already a generative model of intent on which to simulate possible mind states.
+
+- And lastly, **language and music** in early humans were only possible because of mentalizing in ancestral primate brains.
+    - There are several pieces of evidence for this. 
+        - **First, language and music are built directly on top of the neural structures of mentalizing: they emerge from uniquely primate mentalizing areas such as STS, TPJ, and the prefrontal cortex.** 
+        - Second, **mirror neurons** have been highly implicated in both theories of language origin as well as language function. 
+        - Third, people with disorders that disrupt mentalizing abilities, such as autists, also show language impairments. 
+        - And lastly, as an infant develops, the advanced mentalizing abilities emerge first in children before language emerges, with "intersubjectivity" and "joint attention" occurring before words. 
+    - These "theory of mind" abilities are a requirement for the development of language abilities. 
+    - The connection between mentalizing and language makes sense through the lens of various theories of the evolution of language. 
+    - **If the original evolutionary pressure for language was in fact for communicating the type and location of faraway food to conspecifics, as has been proposed, then it makes sense that it would at first require mentalizing: the goal of the communication is to figure out what your communication partner does not know that you want them to know, and how to use shared understanding to transfer this knowledge.**
+
+## EVIDENCE FOR THE MODEL
+
+### Evidence For the Proposed Phylogenetic Timing of Brain Modifications
+
+#### Evidence That a Global Neural Integration Center (The First “Brain”) Emerged in Early Bilaterians
+
+#### Evidence That the Pallium, Basal Ganglia, Tectum, and Cerebellum Emerged in Early Vertebrates
+
+#### Evidence That the Neocortex With ACC and Sensory Regions Emerged in Early Mammals
+
+#### Evidence That the Major Brain Modification of Early Primates Was the Addition of the “gPFC-PSC Network”
+
+#### Evidence That the Major Brain Modification of Early Humans Was a Modification to the Arcuate Fasciculus
+
+---
+
+### Evidence for Proposed Phylogenetic Timing of Behavioral Abilities
+
+#### Evidence That Taxis-Navigation and Associative Learning Emerged in Early Bilaterians
+
+#### Evidence That Map-Based Navigation, Interval Timing, and Omission Learning Emerged in Early Vertebrates
+
+#### Evidence That Vicarious Trial and Error, Episodic Memory, and Counterfactual Learning Emerged in Early Mammals
+
+#### Evidence That Anticipating Future Needs, Theory of Mind, and Learning Through Observation Emerged in Early Primates
+
+#### Evidence That Language and Music Emerged in Early Humans
+
+---
+
+### Evidence for Proposed Function of Specific Brain Modifications
+
+#### Evidence That the Brain of Early Bilaterians Contained Valence Neurons and Neuromodulators Which Together Enabled Taxis Navigation
+
+#### Evidence That the Pallial-BG-Tectal Network Performed the Function of Model-Free Reinforcement Learning in Early Vertebrates, and Was Applied to Enable Map-Based Navigation, Interval Timing, and Omission Learning
+
+#### Evidence That the Neocortex Served the Function of Enabling Internally Invoked Simulations in Early Mammals, Which Was Applied for VTE, Counterfactual Learning, and Episodic Memory
+
+#### Evidence That the gPFC-PSC Network Performed the Function of “Mentalizing” in Early Primates, and Was Similarly Applied for Anticipating Future Needs, Theory of Mind, and Learning Through Observation
+
+#### Evidence That Modifications to the Arcuate Fasciculus Enabled Both Language and Music in Early Humans
+
+---
+
+## DISCUSSION
+
+- Here I have argued that the proposed ordered set of five breakthroughs provides a first approximate explanation of a diverse set of both brain and behavioral modifications through major milestones in human brain evolution. 
+    - This model of brain evolution provides a useful simplification through which to interpret brain modifications and the progressive complexification of behavior through phylogenetic refinement
+
+### Caveats (警告)
+
+- By summarizing such a long history into only a handful of "breakthroughs," I am undeniably simplifying the actual story. 
+    - The objective is to provide a view of the "forest" of evolution at the cost of describing "the trees". 
+    - This approach will inevitably miss some important changes in brains and behavior. 
+    - However, as argued above, a surprisingly broad set of brain structures and behaviors can be understood through a remarkably small number of "breakthroughs."
+    - Perhaps this is not so surprising, given that perhaps brain evolution often occurred in fits and starts, where some adaptive structure was stumbled upon, rapidly elaborated on, and then brains remained relatively stable for a long period of time afterward. 
+    - This can be seen simply in the transition from our primate ancestors to homo sapiens. 
+    - For 30 million years primate brains remained mostly unchanged. 
+    - And then, over the last 1 million years our ancestors’ brains expanded by a multiple of three. 
+    - A million years ago humans could not speak flexible language, and 100,000 years ago they could — this is a split second from an evolutionary perspective.
+
+- It should also be noted that there is scant (很少) research with identically designed behavioral tests of animals across different phyla (门). 
+    - This makes it both challenging and perilous (危险) to compare behavioral abilities across distant species. 
+    - Many of the behavioral studies cited were not identically designed for each species tested nor evaluated using the same methods for different species, and hence such results must be interpreted with caution. 
+    - For example, the experimental designs of asking a mouse to answer "unexpected Questions" from its own past are of course subtly different from asking the same Question of a cephalopod (头足类动物), who has a different sensory repertoire (全部技能) and is inevitably asked the Question in a different environment.
+    - As such, differences in results may be a consequence of the experimental design as opposed to differences in abilities.
+    - Further, comparative behavior research likely contains a positive results bias — whereby negative findings in animals are reported substantially less frequently than positive results.
+    - As such, there are scant reports of negative findings in general, and it is challenging to conclude the lack of ability in an extant (现存) animal simply because of a lack of reports of its presence — the absence of evidence is not the evidence of absence. 
+    - **As such, many pieces of this model are currently speculative and will require further studies comparing behavioral abilities across taxa (分类群).**
+
+### Comparison to Other Work
+
+- This work is highly inspired by others who have proposed ordered modifications in the evolution of brains: 
+    - Eva Jablonka and Simona Ginsburg’s retelling (复述) of the evolution of learning systems, 
+    - Paul Cisek’s theory of phylogenetic refinement,
+    - Elisabeth Murray, Steven Wise, and Kim Garham’s work on the evolution of memory systems. 
+- All three of these take an evolutionary approach to understanding how brains work today, by virtue of (凭借) retelling the evolutionary steps by which they came to be.
+
+- My goal in this article is to add to this corpus of work in four ways. 
+    - First, to provide an initial template and "first approximation" of the entire evolutionary story of the human brain, from the first bilaterains to the first homo sapiens.
+    - Second, to simultaneously hypothesize the emergence of both brain regions and adaptive behaviors that these brain structures enabled. 
+    - Third, to directly incorporate dependencies between each sequence of changes. 
+    - Fourth, to attempt to explain broad behaviors using common neural innovations, as opposed to specifically focusing on a type of behavior (such as learning or memory). 
+- In this last sense, this article is in some ways an attempt to bring together the ideas of Jablonka and Ginsburg, Cisek, and Murray, Wise, and Garham with the evolutionary neuroscience work of specific brain structures from Kaas and Striedter and Northcutt.
+
+- **The most well-known model of brain evolution is Paul MacLean’s Triune Brain (1990)**, where he named the three brain systems that he argued evolved sequentially:
+    - the **Reptilian** Complex 
+    - the **Paleomammalian** Complex
+    - the **Neomammalian** Complex 
+- Despite how well known the model is, it has been highly discredited (被否定) and demonstrated to be **completely wrong** 
+
+- A key flaw in MacLean’s model is the conceptualization of extant animals such as reptiles or monkeys as somehow "lower" animals, and humans as "higher." 
+    - His idea that the human brain has a "reptile brain" and a "monkey brain" within it, incorrectly conceptualizes an extant monkey brain as being more primitive than a human brain. 
+    - The truth is of course that all extant animals have gone through evolution for the same amount of time and evolved from common ancestors. 
+
+- In contrast, the model of five breakthroughs proposed here is crafted to discuss specifically the evolutionary process only within the human lineage and is not meant to be used to make comparisons to extant animals today.
