@@ -5,6 +5,11 @@ theme:
   features:
     - content.code.copy # Optional: Adds a copy button to code blocks
     - content.code.annotate # Optional: Allows for code annotations
+  logo: logo.png
+  favicon: logo.png
+  palette:
+    primary: black # top bar
+    accent: blue # links, interactive elements
 
 markdown_extensions:
   - attr_list
