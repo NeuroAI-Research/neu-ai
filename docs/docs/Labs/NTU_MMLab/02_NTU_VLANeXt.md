@@ -1,4 +1,4 @@
-# 3 2026 NTU VLANeXt
+# 2 2026 NTU VLANeXt
 
 - [VLANeXt: Recipes for Building Strong VLA Models](https://arxiv.org/pdf/2602.18532)
 - The codebase is available at https://github.com/DravenALG/VLANeXt
@@ -204,7 +204,7 @@
 
 ### 2.4. Summary of Recipes
 
-![](../imgs/03_NTU_VLANeXt.png)
+![](./imgs/02_NTU_VLANeXt.png)
 
 - Starting from a classical **RT-2/OpenVLA-style baseline**, we find that strong VLA performance emerges from a series of principled design choices. Beneficial changes include: 
     - **replacing token reuse with a deeper, dedicated policy module;**

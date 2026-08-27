@@ -1,4 +1,4 @@
-# 2 2026 NTU DynamicVLA
+# 1 2026 NTU DynamicVLA
 
 - [DynamicVLA: A Vision-Language-Action Model for Dynamic Object Manipulation](https://arxiv.org/pdf/2601.22153)
 
@@ -102,7 +102,7 @@
 
 ## III. THE DYNAMIC-VLA MODEL
 
-![](../imgs/02_NTU_DynamicVLA.png)
+![](./imgs/01_NTU_DynamicVLA.png)
 
 ### A. Problem Formulation
 
@@ -219,7 +219,7 @@ A_t^\tau := (1-\tau) \epsilon + \tau A_t   $$
 
 ### C. Simulation Data Collection
 
-![](../imgs/02_NTU_DynamicVLA_data.png)
+![](./imgs/01_NTU_DynamicVLA_data.png)
 
 - Our simulation framework is designed with two core objectives: 
     - to rapidly scale up dynamic manipulation data for pretraining VLA policies, and 

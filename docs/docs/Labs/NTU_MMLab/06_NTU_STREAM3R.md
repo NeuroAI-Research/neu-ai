@@ -1,4 +1,4 @@
-# 5 2025 NTU STREAM3R
+# 6 2025 NTU STREAM3R
 
 - [STREAM3R: Scalable Sequential 3D Reconstruction with Causal Transformer](https://arxiv.org/pdf/2508.10893)
 - https://github.com/NIRVANALAN/STream3R
@@ -123,7 +123,7 @@ $$ \hat{X}_{t,1} , \hat{C}_{t,1} = \text{Head}_t (G_t^0, ..., G_t^B)  $$
     - We first introduce the problem formulation in Sec. 4.1, the architecture in Sec. 4.2, and the training objectives in Sec. 4.3, and the implementation details in Sec. 5. 
     - An overview of the proposed method is shown in Fig. 2.
 
-![](../imgs/05_NTU_STREAM3R.png)
+![](./imgs/06_NTU_STREAM3R.png)
 
 ### 4.1 Problem Definition and Notation
 

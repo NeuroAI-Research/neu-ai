@@ -1,4 +1,4 @@
-# 6 2025 NTU Puffin
+# 7 2025 NTU Puffin
 
 - [THINKING WITH CAMERA: A UNIFIED MULTIMODAL MODEL FOR CAMERA-CENTRIC UNDERSTANDING AND GENERATION](https://arxiv.org/pdf/2510.08673)
 - https://github.com/KangLiao929/Puffin
@@ -92,7 +92,7 @@
 
 ## 3 CAMERA-CENTRIC UNIFIED MULTIMODAL MODEL
 
-![](../imgs/06_NTU_Puffin.png)
+![](./imgs/07_NTU_Puffin.png)
 
 - Puffin, as illustrated in Figure 2, unifies camera-centric understanding and generation within a multimodal paradigm. 
     - For **understanding**, we introduce a geometry-aligned **vision encoder** to a **large language model (LLM)** to retain rich geometric features and enhance the model’s capacity for spatial analysis. 

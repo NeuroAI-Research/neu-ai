@@ -1,4 +1,4 @@
-# 2 2026 NTU 4RC
+# 4 2026 NTU 4RC
 
 - [4RC: 4D Reconstruction via Conditional Querying Anytime and Anywhere](https://arxiv.org/pdf/2602.10094)
 - https://github.com/Luo-Yihang/4RC
@@ -104,7 +104,7 @@
 - Our goal is to develop a unified and feed-forward model, 4RC, that takes a monocular video as input and reconstructs the full underlying 4D attributes of the scene. 
     - The core of our approach lies in encoding the entire video sequence into a compact 4D representation, which can then be queried on-demand to decode the geometry and motion of any query frame at any target timestamp, as illustrated in Figure 2.
 
-![](../imgs/02_NTU_4RC.png)
+![](./imgs/04_NTU_4RC.png)
 
 ### 3.1. Problem Formulation
 

@@ -1,5 +1,7 @@
 # 1 2022 DiT: Diffusion Transformer
 
+- [Scalable Diffusion Models with Transformers](https://arxiv.org/pdf/2212.09748)
+
 ## Abstract
 
 - We explore a new class of diffusion models based on the transformer architecture. 

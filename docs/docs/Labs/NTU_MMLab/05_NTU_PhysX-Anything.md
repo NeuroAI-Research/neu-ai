@@ -1,4 +1,4 @@
-# 3 2025 NTU PhysX-Anything
+# 5 2025 NTU PhysX-Anything
 
 - [PhysX-Anything: Simulation-Ready Physical 3D Assets from Single Image](https://arxiv.org/pdf/2511.13648)
 
@@ -90,7 +90,7 @@
 
 ## 3. Methodology
 
-![](../imgs/03_NTU_PhysX-Anything.png)
+![](./imgs/05_NTU_PhysX-Anything.png)
 
 - In this section, we present the detailed paradigm of PhysXAnything, as illustrated in Fig. 3. 
     - It adopts a global-to-local pipeline. 
@@ -120,7 +120,7 @@
 
 ### 3.2. VLM & Physical Representation Decoder
 
-![](../imgs/03_NTU_PhysX-Anything_Decoder.png)
+![](./imgs/05_NTU_PhysX-Anything_Decoder.png)
 
 - Building on the above representation for physical 3D assets, **we adopt Qwen2.5 as our foundation model and fine-tune the VLM on our physical 3D datasets.** 
 

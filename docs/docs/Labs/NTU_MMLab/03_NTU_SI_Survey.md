@@ -1,4 +1,4 @@
-# 1 2025 NTU SI Survey
+# 3 2025 NTU SI Survey
 
 - [Reconstructing 4D Spatial Intelligence: A Survey](https://arxiv.org/pdf/2507.21045)
 
