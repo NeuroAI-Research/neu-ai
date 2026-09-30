@@ -1,5 +1,5 @@
 ---
-title: Creator (Ricky)
+title: Site Creator (Ricky)
 ---
 
 # Ricky Ding
