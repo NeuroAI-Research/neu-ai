@@ -1,0 +1,157 @@
+% Curriculum Vitae -- Ricky Ding
+% Compile with pdfLaTeX (e.g. on Overleaf).
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true, urlcolor=blue, linkcolor=blue, pdfauthor={Ricky (Ruiqi) Ding}, pdftitle={Curriculum Vitae}}
+
+% Supporting documents hosted on the website
+\newcommand{\doc}[2]{\href{https://neuroai-research.github.io/Ricky/#1}{#2}}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.2em, itemsep=1pt, topsep=2pt, parsep=0pt}
+
+\titleformat{\section}{\large\scshape}{}{0em}{}[\vspace{-0.6ex}\rule{\textwidth}{0.4pt}]
+\titlespacing*{\section}{0pt}{1.6ex}{1.0ex}
+
+% \entry{Title}{Dates}{Subtitle}{Location}
+\newcommand{\entry}[4]{%
+  \textbf{#1} \hfill #2\\
+  \textit{#3} \hfill \textit{#4}\par\vspace{2pt}}
+
+\begin{document}
+
+% ------------------------------------------------------------------
+\begin{center}
+  {\LARGE \textsc{Ricky (Ruiqi) Ding}}\\[4pt]
+  \href{https://neuroai-research.github.io/Ricky/}{neuroai-research.github.io/Ricky}
+  \;$\cdot$\; \href{https://github.com/tesla-cat}{github.com/tesla-cat}\\
+  \href{mailto:e0134117@u.nus.edu}{e0134117@u.nus.edu}
+  \;$\cdot$\; \href{https://www.linkedin.com/in/rickyding1997}{linkedin.com/in/rickyding1997}
+\end{center}
+
+% ------------------------------------------------------------------
+\section{Research Interests}
+
+I am broadly interested in AI and neuroscience/neurotechnology research. My
+current self-directed focus is neuroscience-inspired AI: understanding how
+specific modules and circuits of the human brain achieve their functions, and
+replicating those functions with modern AI methods, in the spirit of
+\href{https://doi.org/10.1016/j.neuron.2017.06.011}{Hassabis et al.\ (\textit{Neuron}, 2017)}.
+I trained in physics and have since worked as a software developer.
+
+% ------------------------------------------------------------------
+\section{Current Research Project}
+
+\textbf{NeuroAI Research} \hfill 2026 -- present\\
+(\href{https://neuroai-research.github.io/}{website},
+\href{https://github.com/NeuroAI-Research/neu-ai}{code})
+\begin{itemize}
+  \item Self-directed study towards replicating brain modules and circuits
+        with modern AI methods; currently in the learning and
+        re-implementation stage
+  \item Minimal re-implementations of models from Dayan \& Abbott,
+        \textit{Theoretical Neuroscience}: neural encoding and decoding,
+        information theory, network models, plasticity, reinforcement learning
+  \item Minimal re-implementations of GPT-2, Gemma~2, PPO, SAC, DreamerV3
+        and flow matching
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Education}
+
+\entry{National University of Singapore}{2016 -- 2020}
+      {B.Sc.\ (Honours) in Physics, Highest Distinction}{Singapore}
+\begin{itemize}
+  \item Thesis (supervisor: Prof.\ Berthold-Georg Englert):
+        \doc{2020-03-01_BSc_Thesis.pdf}{\textit{Density Potential Functional
+        Theory in $x$ and $p$ spaces and its implementation}}
+  \item Scholarship: \href{https://nus.edu.sg/oam/scholarships/scholarships-for-freshmen-(international-students)/science-technology-undergraduate-scholarship}{Science \& Technology Undergraduate Scholarship}
+  \item Degree certificate: \doc{2020-06-30_NUS.png}{image};
+        \doc{2020-06-30_NUS.opencert}{OpenCert}, verifiable at
+        \href{https://www.opencerts.io}{opencerts.io}
+\end{itemize}
+\vspace{4pt}
+
+\entry{University of G\"ottingen}{2019}
+      {Undergraduate exchange programme (non-degree)}{G\"ottingen, Germany}
+\begin{itemize}
+  \item Took courses in biophysics from the M.Sc.\ Physics programme
+        (\doc{2019-08-06_Gottingen.pdf}{certificate})
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Research Experience}
+
+\entry{Centre for Quantum Technologies, National University of Singapore}{2020 -- 2021}
+      {Research Assistant (Software Development)}{Singapore}
+\begin{itemize}
+  \item Compared deep reinforcement learning with gradient ascent pulse
+        engineering (GRAPE) for quantum optimal control
+        (\doc{2020_09_01_RL_Quantum_Optimal_Control.pdf}{report})
+  \item Studied transmon (superconducting) quantum computing
+        (\doc{2020-06-22_Transmon_Quantum_Computer.pdf}{notes})
+  \item Worked on IQ mixer tuning
+        (\doc{2021_01_01_IQ_Mixer_Tuning.pdf}{notes})
+  \item Employment \doc{2021-05-19_NUS_CQT_Certificate.pdf}{certificate}
+\end{itemize}
+\vspace{4pt}
+
+\entry{Research Internships, National University of Singapore}{2018 -- 2019}
+      {Undergraduate research}{Singapore}
+\begin{itemize}
+  \item 2019: \href{https://ions-sg.org/index.html}{Quantum Computing Lab},
+        supervised by
+        \href{https://scholar.google.com/citations?user=B4X3nCMAAAAJ&hl=en}{Prof.\ Dzmitry Matsukevich}
+  \item 2018: Quantum Theory Group, supervised by
+        \href{https://scholar.google.com/citations?user=ttUoRO4AAAAJ&hl=en}{Prof.\ Berthold-Georg Englert}
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Professional Experience}
+
+\entry{Frontline Industrial Software}{2022 -- 2025}
+      {Software Developer}{Singapore}
+\begin{itemize}
+  \item Developed software products for industrial clients, applying:
+  \begin{itemize}
+    \item large language models for content generation
+    \item vector embeddings and similarity search
+    \item automatic differentiation and stochastic gradient descent (Adam)
+    \item density-based clustering (\href{https://github.com/scikit-learn-contrib/hdbscan}{HDBSCAN})
+    \item mixed-integer linear programming (\href{https://github.com/coin-or/pulp}{PuLP})
+  \end{itemize}
+  \item Frontend: Vue, React, Capacitor (Web, Android, iOS);
+        backend: Python, JavaScript (FastAPI, Bun)
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Personal Projects}
+
+\textbf{Algorithmic Trading}
+\begin{itemize}
+  \item Differentiable backtesting; deep reinforcement learning
+\end{itemize}
+\vspace{4pt}
+
+\textbf{Tesla Coil Gun} (\href{https://www.youtube.com/watch?v=l_bg02wG8IY}{video})
+\begin{itemize}
+  \item \href{https://github.com/TeslaCoilResearch/tesla-coil-simulator}{Physics simulation}
+        of a dual-resonant solid-state Tesla coil (DRSSTC);
+        \doc{TC_Music_App.png}{waveform synthesiser}
+  \item \doc{2023-12-16_TC_Gun_driver.pdf}{Schematic} and
+        \doc{2023-12-16_driver_PCB_3D.png}{PCB} design;
+        CPLD programming in Verilog
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,124 @@
+/* CV page (Ricky.md): mirrors the LaTeX CV (Ricky.tex) */
+
+@font-face {
+  font-family: "Latin Modern";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://cdn.jsdelivr.net/npm/latex.css@1.14.0/fonts/LM-regular.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Latin Modern";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://cdn.jsdelivr.net/npm/latex.css@1.14.0/fonts/LM-italic.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Latin Modern";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://cdn.jsdelivr.net/npm/latex.css@1.14.0/fonts/LM-bold.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Latin Modern";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://cdn.jsdelivr.net/npm/latex.css@1.14.0/fonts/LM-bold-italic.woff2) format("woff2");
+}
+
+.md-typeset .cv {
+  font-family: "Latin Modern", Georgia, serif;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #000;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.md-typeset .cv a {
+  color: blue;
+}
+.md-typeset .cv a:hover {
+  text-decoration: underline;
+}
+
+/* Header: name + contact lines */
+.md-typeset .cv .cv-head {
+  text-align: center;
+  margin-bottom: 1.2em;
+}
+.md-typeset .cv .cv-head h1 {
+  font-variant: small-caps;
+  font-weight: 400;
+  font-size: 2em;
+  color: #000;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.3em;
+}
+.md-typeset .cv .cv-head p {
+  margin: 0;
+}
+.md-typeset .cv .cv-pdf {
+  margin-top: 0.6em !important;
+  font-size: 0.9em;
+}
+
+/* Section headings: small caps with a rule underneath */
+.md-typeset .cv h2 {
+  font-variant: small-caps;
+  font-weight: 400;
+  font-size: 1.3em;
+  color: #000;
+  letter-spacing: 0.02em;
+  margin: 1.4em 0 0.6em;
+  padding-bottom: 0.1em;
+  border-bottom: 0.5px solid #000;
+}
+
+/* Entry: bold title / date on one line, italic role / location below.
+   Items wrap onto their own lines on narrow screens. */
+.md-typeset .cv .entry {
+  margin: 0.9em 0 0.2em;
+}
+.md-typeset .cv .entry > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 1em;
+}
+.md-typeset .cv .entry > div:first-child > :first-child {
+  font-weight: 700;
+}
+.md-typeset .cv .entry > div:nth-child(2) {
+  font-style: italic;
+}
+
+.md-typeset .cv p {
+  margin: 0.4em 0;
+}
+.md-typeset .cv ul {
+  margin: 0.2em 0 0.6em;
+  padding-left: 0;
+}
+.md-typeset .cv ul li {
+  margin: 0.1em 0 0.1em 1.2em;
+}
+.md-typeset .cv ul ul {
+  margin: 0.1em 0;
+}
+
+/* Phones: one contact per line, smaller name */
+@media (max-width: 600px) {
+  .md-typeset .cv .cv-head h1 {
+    font-size: 1.6em;
+  }
+  .md-typeset .cv .cv-head a {
+    display: block;
+  }
+  .md-typeset .cv .cv-head .sep {
+    display: none;
+  }
+}
