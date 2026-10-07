@@ -7,3 +7,4 @@ temp*
 .vscode
 __pycache__
 docs/site
+node_modules
