@@ -1,0 +1,164 @@
+% Prefrontal cortex as a meta-RL system (Wang et al. 2018). Build: sh tex/tex2svg.sh (from docs/)
+\documentclass[tikz, border=0pt]{standalone}
+\usepackage{neuroai-fig}
+\begin{document}
+\begin{tikzpicture}[figure]
+\coordinate (O) at (0,0);        % left edge of the content
+\coordinate (Wr) at (\W,0);      % right edge of the content
+\coordinate (Wm) at (0.5\W,0);   % its centre
+
+% ================= title =================
+\node[title] (title) at (0,0) {Prefrontal cortex as a meta-RL system};
+\node[para, text=note] (cite) at ($(title.south west)+(0,-7pt)$)
+  {Wang et al.\ 2018; Wang et al.\ 2016; Duan et al.\ 2016 (RL$^2$)};
+
+% ================= A. algorithm =================
+\node[heading] (Ahead) at ($(cite.south west)+(0,-32pt)$) {Algorithm};
+\node[para, text=grayD] (Adef) at ($(Ahead.south west)+(0,-12pt)$) {%
+  \textbf{Prefrontal network = LSTM with weights $\theta$ and memory (activity) $h$}\\[4pt]
+  Input: observation $o_t$, plus its own last action $a_{t-1}$ and last reward $r_{t-1}$\\[2pt]
+  Output, read out from $h_t$: policy $\pi_t = \pi_\theta(\cdot \mid h_t) = \mathrm{softmax}(W_\pi h_t)$ (actor)
+  and value $V_\theta(h_t) = w_V^{\top} h_t$ (critic)\\[2pt]
+  $\theta$ = all weights: the LSTM's, plus the read-outs $W_\pi$ and $w_V$\\[9pt]
+  \textbf{Meta-environment: a new task every episode}\\[4pt]
+  $\tau \sim p(\tau)$, e.g.\ a two-armed bandit with random reward probabilities $p_L, p_R$.
+  Memory $h$ is reset only at the start of an episode, never between trials.\\[9pt]
+  \textbf{Repeat for every episode:}};
+
+\matrix (S) [steps, at={($(Adef.south west)+(0,-12pt)$)}]
+{
+  1 & $\tau \sim p(\tau),\ \ h_0 = 0$ & |[text=grayS]| New task; clear the memory \\
+  |[spacer]| . & & \\
+  |[badge=purp]| 2 & $h_t = \mathrm{LSTM}_\theta\big(h_{t-1},\ [\,o_t,\ a_{t-1},\ r_{t-1}\,]\big)$ &
+    |[text=purpS]| Loop activity folds the last action and reward into memory \\
+  |[badge=purp]| 3 & $a_t \sim \pi_\theta(\cdot \mid h_t)$ &
+    |[text=purpS]| Act from memory: explore early, exploit once the better arm is clear \\
+  4 & $r_t,\ o_{t+1} = \mathrm{env}_\tau(a_t)$ & |[text=grayS]| Task returns reward and next observation \\
+  |[spacer]| . & & \\
+  |[badge=cora]| 5 & $\delta_t = R_t - V_\theta(h_t)$ &
+    |[text=coraS]| Reward prediction error, sent as phasic dopamine \\
+  |[badge=cora]| 6 & $\theta \leftarrow \theta + \alpha \sum_t \delta_t\, \nabla_\theta
+      \big[\log \pi_\theta(a_t \mid h_t)$ & |[text=coraS]| A3C: actor term $+$ critic term \\
+  |[spacer]| . & $\hphantom{\theta \leftarrow \theta + \alpha \sum_t \delta_t\, \nabla_\theta \big[} + \beta_V V_\theta(h_t)\big]$ & \\
+};
+\savewidth{\Wd}{S-1-3.west}{\W,0}
+% the inner loop: steps 2-4
+\begin{pgfonlayer}{lobes}
+  \node[draw=arrP, line width=0.7pt, dash pattern=on 4pt off 3pt, rounded corners=6pt, inner xsep=10pt, inner ysep=7pt,
+    fit={(S-2-1) (S-5-1) (Wr |- S-3-3) ($(S-5-1.south)+(0,-3pt)$)}] (inner) {};
+\end{pgfonlayer}
+\node[anchor=base west, text=purpS, inner sep=0pt] at (S-2-1.base west) {Inner loop, every trial $t$: memory $h$ changes, weights $\theta$ fixed};
+\node[anchor=base west, text=coraS, inner sep=0pt] at (S-6-1.base west) {Outer loop, after each episode: weights $\theta$ change};
+\node[para, text=coraS] (Anote) at ($(S.south west)+(0,-10pt)$)
+  {$R_t = r_t + \gamma r_{t+1} + \dots + \gamma^{n} V_\theta(h_{t+n})$ is the $n$-step return.
+   The critic term $\beta_V \delta_t \nabla_\theta V_\theta = -\nabla_\theta \tfrac{\beta_V}{2} \delta_t^2$ (with $R_t$ held fixed).
+   The gradient reaches the LSTM by backprop through time; the entropy bonus is omitted.};
+\node[para, text=grayD, font=\bfseries] (Atest) at ($(Anote.south west)+(0,-14pt)$)
+  {Test: freeze $\theta$, sample a new $\tau$. Behaviour still improves over trials, so it lives in $h$.};
+
+% ================= B. brain map =================
+% brain faces left. row 1: PFC ... visual cortex   row 2: striatum (anterior), thalamus, environment
+% row 3: VTA (midbrain), under the thalamus
+\node[box=purp, anchor=north west, inner ysep=13pt] (pfc) at ($(Atest.south west)+(8pt,-84pt)$)
+  {\module{purp}{Prefrontal cortex（前额叶）}{$a_t \sim \pi_t = \mathrm{softmax}(W_\pi h_t)$\\[2pt]
+   $W_\pi \leftarrow W_\pi + \alpha \sum_t \delta_t\, (e_{a_t} - \pi_t)\, h_t^{\top}$}};
+\node[box=purp, deep, anchor=north west] (str) at ($(pfc.south west)+(28pt,-62pt)$)
+  {\module{purp}{Striatum（纹状体）}{$V_\theta(h_t) = w_V^{\top} h_t$ (ventral)\\[2pt]
+   $w_V \leftarrow w_V + \alpha \beta_V \sum_t \delta_t\, h_t$}};
+\node[box=purp, deep, right=18pt of str] (thal)
+  {\module{purp}{Thalamus（丘脑）}{Gated relay\\back to PFC}};
+\node[box=gray, right=30pt of thal] (env)
+  {\module{gray}{Environment}{task $\tau$:\\$r_t,\ o_{t+1} = \mathrm{env}_\tau(a_t)$}};
+\node[box=gray, anchor=north west] (vis) at ($(env.west |- pfc.north)+(44pt,0)$)
+  {\module{gray}{Visual cortex}{$o_t = \mathrm{enc}(\text{scene})$}};
+\node[box=cora, deep, anchor=north west] (vta) at ($(thal.south west)+(-10pt,-55pt)$)
+  {\module{cora}{VTA / SNc（中脑多巴胺神经元）}{$\delta_t = R_t - V_\theta(h_t)$}};
+
+\lobes{pfc}{vis}
+\orient{frontal}{occipital}
+
+% arrows: straight where possible, at most one turn, no crossings
+% PFC east side, top to bottom: o_t in, r_t in, a_t out, loop back in from the thalamus
+\coordinate (ot) at ([yshift=16pt]pfc.east);
+\draw[arr=arrG] (vis.west |- ot) -- node[lab=grayS, above] {$o_t$} (ot);
+\draw[arr=arrG] ([xshift=24pt]env.north west) |- node[lab=grayS, right, pos=0.3] {$r_t$} ([yshift=5pt]pfc.east);
+\draw[arr=arrG] ([yshift=-6pt]pfc.east) -| node[lab=grayS, left, pos=0.75] {$a_t$} ([xshift=10pt]env.north west);
+\coordinate (onext) at ($(vis.south west)!0.5!(env.north east)$);  % x where both boxes overlap
+\draw[arr=arrG] (onext |- env.north) -- node[lab=grayS, right] {$o_{t+1}$} (onext |- vis.south);
+\coordinate (rx) at ($(env.south west)!0.5!(vta.north east)$);  % x where environment and VTA overlap
+\draw[arr=arrG] (rx |- env.south) -- node[lab=grayS, right] {$r_t$} (rx |- vta.north);
+% the loop PFC -> striatum -> thalamus -> PFC
+\draw[arr=arrP] (pfc.south -| str.north) -- (str.north);
+\draw[arr=arrP] (str.east) -- (thal.west);
+\draw[arr=arrP] (thal.north) |- ([yshift=-17pt]pfc.east);
+% value to the VTA; dopamine back to the striatum and the PFC (one line, one branch)
+\draw[arr=arrT] ([xshift=20pt]str.south) |- node[lab=tealS, right, pos=0.3] {$V_\theta(h_t)$} ([yshift=6pt]vta.west);
+\coordinate (da) at ([yshift=-6pt]vta.west);
+\draw[arr=arrC] (da) -| node[lab=coraS, right, pos=0.8] {$\delta_t$} ([xshift=14pt]pfc.south west);
+\draw[arr=arrC] ([xshift=-20pt]str.south |- da) -- node[lab=coraS, left] {$\delta_t$} ([xshift=-20pt]str.south);
+
+% step badges: which steps each module carries out
+\node[badge=purp] at (pfc.north west) {2};
+\node[badge=purp] at ([xshift=15pt]pfc.north west) {3};
+\node[badge=cora] at (pfc.north east) {6};
+\node[badge=purp] at (str.north west) {2};
+\node[badge=cora] at (str.north east) {6};
+\node[badge=purp] at (thal.north west) {2};
+\node[badge=gray] at (env.north west) {4};
+\node[badge=cora] at (vta.north west) {5};
+
+% the brain map sets the content width \W of the whole figure
+\path let \p1 = (occipital.east), \p2 = (vta.east), \p3 = (env.east) in
+  coordinate (Bright) at ({max(\x1,\x2,\x3)}, 0);
+\savewidth{\W}{0,0}{Bright}
+
+% legend
+\tikzset{keyw/.style={key, text width={\W-14pt}}}
+\coordinate (L) at ($(frontal.west |- vta.south)+(4.5pt,-26pt)$);
+\node[swatch=gray] (k1) at (L) {};
+\node[key, right=5pt of k1] (t1) {Cortex / environment};
+\node[swatch=purp, deep, right=22pt of t1] (k2) {};
+\node[key, right=5pt of k2] {Dashed = deep structure};
+\node[swatch=purp] (k3) at ($(L)+(0,-20pt)$) {};
+\node[keyw, anchor=north west] (t3) at ($(k3.north east)+(5pt,4pt)$)
+  {PFC + striatum + thalamus = the LSTM of step 2; its activity is the memory $h$};
+\node[swatch=cora] (k4) at ($(L |- t3.south)+(0,-11pt)$) {};
+\node[keyw, anchor=north west] (t4) at ($(k4.north east)+(5pt,4pt)$)
+  {Dopamine $\delta_t$ drives step 6. The rules in the boxes are step 6 for the read-outs, since\\[3pt]
+   \hspace*{10pt}$\nabla_{W_\pi} \log \pi_\theta(a_t \mid h_t) = (e_{a_t} - \pi_t)\, h_t^{\top}, \quad
+   \nabla_{w_V} V_\theta(h_t) = h_t$\\[3pt]
+   ($e_{a_t}$: one-hot vector of $a_t$).
+   Each is dopamine $\delta_t$ $\times$ presynaptic $h_t$ $\times$ a postsynaptic term ($e_{a_t} - \pi_t$, or 1): a local rule.
+   The LSTM weights get the same $\delta_t$, but their gradient needs backprop through time.};
+\node[para, text=note] (Bend) at ($(frontal.west |- t4.south)+(0,-10pt)$)
+  {$a_{t-1}$ reaches PFC as an efference copy（传出副本）of its own last action};
+
+% ================= C. what is learned =================
+\node[heading] (Chead) at ($(Bend.south west)+(0,-48pt)$) {What is actually learned?};
+\tikzset{learned/.style={box=#1, anchor=north west, text width={\W-14pt}}}
+\node[learned=cora] (Cw) at ($(Chead.south west)+(0,-14pt)$)
+  {\textcolor{coraD}{\textbf{Weights $\theta$}}: changed by dopamine (step 6) after each episode.\\[2pt]
+   The recipe: how to fold $(a, r)$ into memory and act on it. Fixed at test.};
+\node[learned=purp] (Cm) at ($(Cw.south west)+(0,-10pt)$)
+  {\textcolor{purpD}{\textbf{Memory $h$}}: activity of the PFC loop, changes every trial.\\[2pt]
+   This task's answer, e.g.\ ``the right arm pays more''. Erased at the next episode.};
+\node[para, text=grayD] (Cout) at ($(Cm.south west)+(0,-16pt)$)
+  {Seen from outside, the inner loop is just a fixed policy with memory:};
+\node[display, text=ink] (Ceq) at ($(Wm |- Cout.south)+(0,-12pt)$)
+  {$a_t \sim \pi_\theta\big(\cdot \mid h_t\big), \qquad h_t = f_\theta\big(o_{\le t},\ a_{<t},\ r_{<t}\big)$};
+\node[para, text=grayD] (Ctau) at ($(O |- Ceq.south)+(0,-12pt)$)
+  {The task $\tau$ is a hidden variable of the meta-environment. Within an episode,
+   ``learning'' = inferring $\tau$ from the history of actions and rewards.};
+\node[para, text=note] (Cend) at ($(Ctau.south west)+(0,-10pt)$)
+  {Caveat: the paper calls this a ``second RL algorithm''. Unlike PPO, it cannot train another
+   network, and it only works on tasks from $p(\tau)$. Learned weight-update rules: LPG, DiscoRL.};
+
+% ================= panel frames, as wide as the content =================
+\coordinate (XL) at (-14pt,0);
+\coordinate (XR) at (\W+14pt,0);
+\begin{pgfonlayer}{panels}
+  \node[panel, inner sep=0pt, fit={(XL |- Ahead.north) ($(XR |- Atest.south)+(0,-14pt)$) ($(Ahead.north)+(0,14pt)$)}] {};
+  \node[panel, inner sep=0pt, fit={(XL |- Chead.north) ($(XR |- Cend.south)+(0,-14pt)$) ($(Chead.north)+(0,14pt)$)}] {};
+\end{pgfonlayer}
+\end{tikzpicture}
+\end{document}

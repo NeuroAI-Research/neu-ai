@@ -1,0 +1,64 @@
+% The two visual streams, from the eye to prefrontal cortex. Build: sh tex/tex2svg.sh (from docs/)
+\documentclass[tikz, border=0pt]{standalone}
+\usepackage{neuroai-fig}
+\begin{document}
+\begin{tikzpicture}[figure]
+\tikzset{
+  area/.style={box=#1, align=center, inner ysep=8pt},  % brain area: name, then what it does
+}
+% brain faces left. occipital (right): V1, V2 in the middle, V3 above, V4 below
+% dorsal stream goes up and forward (V3, MT -> parietal), ventral stream down and forward (V4 -> IT)
+\node[area=gray, minimum height=96pt] (v2) at (0,0) {{\large V2}\\[3pt] Contours};
+\node[area=gray, minimum height=96pt, right=14pt of v2] (v1) {{\large V1}\\[3pt] Edges};
+\path let \p1 = (v2.west), \p2 = (v1.east) in
+  node[area=teal, minimum width=\x2-\x1, anchor=south west] (v3) at ($(v2.north west)+(0,16pt)$) {{\large V3}\\[3pt] Form, depth}
+  node[area=purp, minimum width=\x2-\x1, anchor=north west] (v4) at ($(v2.south west)+(0,-40pt)$) {{\large V4}\\[3pt] Shapes; $\approx$ CNN layer 3};
+\node[area=teal, anchor=east] (mt) at ($(v2.west)+(-22pt,-14pt)$) {{\large MT / V5}\\[3pt] Motion};
+\node[area=teal, anchor=east] (ppc) at ($(v3.west)+(-36pt,0)$)
+  {{\large Posterior parietal cortex}\\（后顶叶皮层）\\[3pt] Where / how to act};
+\node[area=purp, anchor=east] (it) at ($(v4.west)+(-80pt,0)$)
+  {{\large IT cortex}\\（下颞叶皮层）\\[3pt] Objects; $\approx$ CNN top layer};
+\node[area=gray, anchor=north east] (pfc) at ($(ppc.south west)+(-40pt,-30pt)$)
+  {{\large Prefrontal cortex}\\（前额叶皮层）\\[3pt] Decisions, memory};
+
+% lobes
+\begin{pgfonlayer}{lobes}
+  \coordinate (lobetop) at ($(v3.north)+(0,22pt)$);  % frontal, parietal and occipital share one top edge
+  \node[lobe, inner sep=12pt, fit={(v3) (v4) (v3.west |- lobetop)}] (occ) {};
+  \node[lobe, inner sep=12pt, fit={(ppc) (ppc.west |- lobetop)}] (par) {};
+  \node[lobe, inner sep=12pt, fit={(it) ($(it.north east)+(0,22pt)$)}] (tem) {};
+  \node[lobe, inner sep=12pt, fit={(pfc) (pfc.west |- lobetop)}] (fro) {};
+\end{pgfonlayer}
+\node[lobename] at ($(fro.north west)+(9pt,-7pt)$) {Frontal lobe（额叶）};
+\node[lobename] at ($(par.north west)+(9pt,-7pt)$) {Parietal lobe（顶叶）};
+\node[lobename] at ($(occ.north west)+(9pt,-7pt)$) {Occipital（枕叶）};
+\node[lobename, anchor=north east] at ($(tem.north east)+(-9pt,-7pt)$) {Temporal lobe（颞叶）};
+\orient{fro}{occ}
+
+% eye and LGN, below the brain
+\node[area=gray, anchor=north west] (eye) at ($(fro.west |- tem.south)+(0,-30pt)$) {{\large Eye: retina}\\[3pt] Light to spikes};
+\node[area=gray, deep, right=60pt of eye] (lgn) {{\large LGN（外侧膝状体）}\\ In the thalamus（丘脑）\\[3pt] Relays to V1};
+
+% arrows: shared early stages, then the two streams
+\draw[arr=arrG] (eye) -- (lgn);
+\draw[arr=arrG] (lgn.east) -| ($(occ.east |- v1.east)+(14pt,0)$) -- (v1.east);
+\draw[arr=arrG] (v1) -- (v2);
+\draw[arr=arrT] (v2.north) -- (v2.north |- v3.south);
+\draw[arr=arrT] (v3.west) -- (v3.west -| ppc.east);
+\draw[arr=arrT] (mt.east -| v2.west) -- (mt.east);
+\draw[arr=arrT] (mt.north) -- (mt.north |- ppc.south);
+\draw[arr=arrT] (ppc.west) -| (pfc.north);
+\draw[arr=arrP] (v2.south) -- (v2.south |- v4.north);
+\draw[arr=arrP] (v4.west) -- (v4.west -| it.east);
+\draw[arr=arrP] (it.west) -| (pfc.south);  % left out of IT, then up into PFC: one turn
+
+% legend
+\coordinate (L) at ($(eye.south west)+(4.5pt,-26pt)$);
+\node[swatch=gray] (k1) at (L) {};
+\node[key, right=5pt of k1] (t1) {Shared early stages};
+\node[swatch=purp, right=22pt of t1] (k2) {};
+\node[key, right=5pt of k2] {Ventral ``what'' stream（腹侧通路）};
+\node[swatch=teal] (k3) at ($(L)+(0,-20pt)$) {};
+\node[key, right=5pt of k3] {Dorsal ``where / how'' stream（背侧通路）};
+\end{tikzpicture}
+\end{document}

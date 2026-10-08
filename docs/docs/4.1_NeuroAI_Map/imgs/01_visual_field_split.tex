@@ -1,0 +1,57 @@
+% Each hemisphere sees the opposite half of the visual field. Build: sh tex/tex2svg.sh (from docs/)
+\documentclass[tikz, border=0pt]{standalone}
+\usepackage{neuroai-fig}
+\begin{document}
+% coordinates: 1 unit = 0.75pt, y grows downwards (seen from above, scene at the top)
+\begin{tikzpicture}[figure, x=0.75pt, y=-0.75pt, every node/.append style={align=center}]
+\tikzset{
+  ray/.style={draw=#1, line width=0.75pt, opacity=0.7},
+  fiber/.style={draw=#1, line width=1.9pt},
+  retina/.style={draw=#1, line width=4.5pt},
+  field/.style={box=#1, align=center, minimum width=150pt, minimum height=37pt},
+}
+% fixation line and point
+\draw[draw=lobe, line width=0.75pt, dash pattern=on 2.2pt off 3pt] (340,40) -- (340,600);
+\node[text=note, above=2pt] at (340,40) {You look here};
+\fill[arrG] (340,65) circle (3.7pt);
+% the two halves of the scene
+\node[field=cora, text=coraD] (left)  at (200,65) {\large Left half of scene};
+\node[field=teal, text=tealD] (right) at (480,65) {\large Right half of scene};
+
+% eyes: a ray from each half enters the pupil and lands on the opposite side of the retina
+\foreach \x/\name/\side/\lbl in {240/leye/left/Left eye, 440/reye/right/Right eye} {
+  \draw[ray=arrC] (left.south) -- (\x,160) -- (\x+28,228);
+  \draw[ray=arrT] (right.south) -- (\x,160) -- (\x-28,228);
+  \draw[draw=note, line width=0.75pt] (\x,200) circle (30pt);
+  \draw[retina=arrT] (\x-40,200) arc[start angle=180, end angle=270, radius=30pt];
+  \draw[retina=arrC] (\x,240) arc[start angle=270, end angle=360, radius=30pt];
+  \fill[note] (\x,160) circle (3pt);
+}
+\node[anchor=east, font=\large\bfseries, text=ink] at (190,200) {Left eye};
+\node[anchor=west, font=\large\bfseries, text=ink] at (490,200) {Right eye};
+
+% hemispheres
+\node[field=teal, minimum width=0pt] (llgn) at (210,431) {\textcolor{tealD}{\large Left LGN（外侧膝状体）}\\ Relays to V1};
+\node[field=cora, minimum width=0pt] (rlgn) at (470,431) {\textcolor{coraD}{\large Right LGN（外侧膝状体）}\\ Relays to V1};
+\node[field=teal, minimum width=0pt] (lv1) at (210,523) {\textcolor{tealD}{\large Left V1（初级视觉皮层）}\\ Gets right half only};
+\node[field=cora, minimum width=0pt] (rv1) at (470,523) {\textcolor{coraD}{\large Right V1（初级视觉皮层）}\\ Gets left half only};
+\draw[arr=arrT] (llgn) -- (lv1);
+\draw[arr=arrC] (rlgn) -- (rv1);
+\begin{pgfonlayer}{lobes}
+  \node[lobe, inner sep=12pt, fit={(llgn) (lv1) ($(lv1.south)+(0,22)$)}] (lhem) {};
+  \node[lobe, inner sep=12pt, fit={(rlgn) (rv1) ($(rv1.south)+(0,22)$)}] (rhem) {};
+\end{pgfonlayer}
+\node[anchor=south west, text=note] at ($(lhem.south west)+(8pt,5pt)$) {Left hemisphere};
+\node[anchor=south west, text=note] at ($(rhem.south west)+(8pt,5pt)$) {Right hemisphere};
+
+% optic nerve fibres: the nasal half of each retina crosses at the chiasm
+\draw[fiber=arrT] (212,236) .. controls (212,300) and (200,340) .. ([xshift=-12pt]llgn.north);
+\draw[fiber=arrC] (268,236) .. controls (340,320) .. ([xshift=-12pt]rlgn.north);
+\draw[fiber=arrT] (412,236) .. controls (340,320) .. ([xshift=12pt]llgn.north);
+\draw[fiber=arrC] (468,236) .. controls (468,300) and (480,340) .. ([xshift=12pt]rlgn.north);
+% label sits in the free wedge right of the crossing, left of the right eye's own fibre
+\node[anchor=west, inner sep=0pt, align=left, font=\small\bfseries, text=ink] at (370,298) {Optic chiasm\\[1pt]（视交叉）};
+
+\node[text=note] at (340,618) {Seen from above, eyes facing the scene};
+\end{tikzpicture}
+\end{document}

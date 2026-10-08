@@ -1,0 +1,91 @@
+% Shared look for the NeuroAI diagrams (docs/docs/**/imgs/*.tex), built to SVG by tex/tex2svg.sh.
+% Brain modules are drawn like components in a schematic:
+% - Boxes size to their content, and every position is relative to another box.
+% - Arrows start and end on box anchors.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{neuroai-fig}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setCJKmainfont{Songti SC}
+\usepackage{amsmath, amssymb}
+\usetikzlibrary{positioning, calc, fit, backgrounds, arrows.meta, matrix}
+
+% ---- palette: <name>F fill, <name>S stroke / text, <name>D title; arr<X> arrows ----
+\definecolor{grayF}{HTML}{F1EFE8}  \definecolor{grayS}{HTML}{5F5E5A}  \definecolor{grayD}{HTML}{444441}
+\definecolor{purpF}{HTML}{EEEDFE}  \definecolor{purpS}{HTML}{534AB7}  \definecolor{purpD}{HTML}{3C3489}
+\definecolor{tealF}{HTML}{E1F5EE}  \definecolor{tealS}{HTML}{0F6E56}  \definecolor{tealD}{HTML}{085041}
+\definecolor{coraF}{HTML}{FAECE7}  \definecolor{coraS}{HTML}{993C1D}  \definecolor{coraD}{HTML}{712B13}
+\definecolor{arrG}{HTML}{888780}   \definecolor{arrP}{HTML}{7F77DD}   \definecolor{arrT}{HTML}{1D9E75}
+\definecolor{arrC}{HTML}{D85A30}   \definecolor{lobe}{HTML}{B4B2A9}   \definecolor{note}{HTML}{73726C}
+\definecolor{ink}{HTML}{2C2C2A}    \definecolor{panelF}{HTML}{FAFAF8} \definecolor{panelS}{HTML}{D3D1C7}
+
+% layers above the white page: panel frames, then lobes, then everything else
+\pgfdeclarelayer{panels}\pgfdeclarelayer{lobes}
+\pgfsetlayers{background,panels,lobes,main}
+
+\tikzset{
+  figure/.style={background rectangle/.style={fill=white}, show background rectangle, inner frame sep=14pt},
+  % module box: title, then its equations or a few words; #1 = gray | purp | teal | cora
+  box/.style={draw=#1S, fill=#1F, line width=0.4pt, rounded corners=2pt,
+    align=left, inner xsep=7pt, inner ysep=6pt, text=#1S},
+  deep/.style={dash pattern=on 3pt off 2.2pt},  % structure below the cortex
+  lobe/.style={draw=lobe, line width=0.7pt, dash pattern=on 3.7pt off 3pt, rounded corners=9pt},
+  lobename/.style={anchor=north west, font=\bfseries, text=ink, inner sep=0pt},
+  badge/.style={circle, fill=#1S, text=white, font=\scriptsize\bfseries, inner sep=0pt, minimum size=13pt},
+  arr/.style={-{Straight Barb[length=3.5pt, width=6pt]}, line width=1.1pt, draw=#1},
+  lab/.style={text=#1, inner sep=2pt},  % arrow label
+  swatch/.style={draw=#1S, fill=#1F, rounded corners=2pt, minimum size=9pt, inner sep=0pt},
+  key/.style={anchor=west, text=note},  % legend text
+  panel/.style={fill=panelF, draw=panelS, line width=0.4pt, rounded corners=8pt},
+}
+% \module{colour}{title}{body}: title line, then body lines separated by \\
+\newcommand{\module}[3]{\textcolor{#1D}{\large #2}\\[3pt] #3}
+% orientation line above a brain map: \orient{left node}{right node}
+\newcommand{\orient}[2]{%
+  \node[anchor=south west, text=note, inner sep=0pt] at ($(#1.north west)+(0,6pt)$) {$\leftarrow$ Front};
+  \node[anchor=south east, text=note, inner sep=0pt] at ($(#2.north east)+(0,6pt)$) {Back $\rightarrow$};
+  \path (#1.north west) -- node[above=6pt, text=note, inner sep=0pt] {Left hemisphere, seen from the left} (#2.north east);}
+% \lobes{frontal box}{occipital box} (node names): frontal and occipital outlines fit their boxes,
+% parietal fills the gap between them
+\newcommand{\lobes}[2]{%
+  \begin{pgfonlayer}{lobes}
+    \node[lobe, inner xsep=8pt, inner ysep=7pt, fit={(#1) ($(#1.north west)+(0,20pt)$)}] (frontal) {};
+    \node[lobe, inner xsep=8pt, inner ysep=7pt, fit={(#2) ($(#2.north west)+(0,20pt)$)}] (occipital) {};
+    \draw[lobe] ($(frontal.north east)+(8pt,0)$) rectangle ($(occipital.south west)+(-8pt,0)$);
+  \end{pgfonlayer}
+  \node[lobename] at ($(frontal.north west)+(9pt,-7pt)$) {Frontal lobe（额叶）};
+  \node[lobename] at ($(frontal.north east)+(17pt,-7pt)$) {Parietal（顶叶）};
+  \node[lobename] at ($(occipital.north west)+(9pt,-7pt)$) {Occipital（枕叶）};}
+% several lines in one matrix cell, the first on the row's baseline
+\newcommand{\lines}[1]{\begin{tabular}[t]{@{}l@{}}#1\end{tabular}}
+\tikzset{
+  % numbered algorithm steps: badge | equation | description (colour each cell with |[text=...]|)
+  steps/.style={matrix of nodes, anchor=north west, column sep=9pt, row sep=11pt,
+    column 1/.style={nodes={badge=gray}},
+    column 2/.style={nodes={anchor=base west, font=\large, text=ink}},
+    column 3/.style={nodes={anchor=base west, align=left, inner xsep=9pt, text width={\Wd-18pt}}}},
+  spacer/.style={fill=none, text=white},
+  % \savewidth{\Wd}{S-1-3.west}{\W,0} after a steps matrix S, so its descriptions end at \W  % empty step row that only makes room for a label
+  title/.style={anchor=north west, inner sep=0pt, font=\LARGE\bfseries, text=ink},
+  heading/.style={anchor=north west, inner sep=0pt, font=\large\bfseries, text=ink},
+}
+
+% ---- content width ----
+% Every text block wraps to \W, the width of the figure's brain map, so no line can make the figure
+% wider than the diagram itself. Widths are measured on one run and read back on the next
+% (like LaTeX cross-references), so tex2svg.sh runs xelatex twice. Defaults are for the first run.
+\newlength{\W}\setlength{\W}{400pt}    % content width
+\newlength{\Wd}\setlength{\Wd}{200pt}  % description column of a steps matrix
+\newlength{\Wf}\setlength{\Wf}{250pt}  % second column of any other two-column matrix
+% \savewidth{\length}{left point}{right point}: store the distance for the next run
+\makeatletter
+\newcommand{\savewidth}[3]{\path let \p1 = (#2), \p2 = (#3) in
+  \pgfextra{\immediate\write\@mainaux{\global\string#1=\the\dimexpr\x2-\x1\relax}};}
+\makeatother
+\tikzset{
+  para/.style={anchor=north west, inner sep=0pt, align=left, text width=\W},  % paragraph across the figure
+  % equation on its own line, centred in the figure
+  display/.style={anchor=north, inner sep=0pt, font=\large},
+}
+% wrapped text never hyphenates (diagram labels read badly split)
+\AtBeginDocument{\hyphenpenalty=10000 \exhyphenpenalty=10000}

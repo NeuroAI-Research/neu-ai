@@ -1,0 +1,148 @@
+% Standard dopamine RL model: TD actor-critic. Build: sh tex/tex2svg.sh (from docs/)
+\documentclass[tikz, border=0pt]{standalone}
+\usepackage{neuroai-fig}
+\begin{document}
+\begin{tikzpicture}[figure]
+\coordinate (O) at (0,0);        % left edge of the content
+\coordinate (Wm) at (0.5\W,0);   % its centre
+
+% ================= title =================
+\node[title] (title) at (0,0) {Standard dopamine RL model: TD actor-critic};
+\node[para, text=note] (cite) at ($(title.south west)+(0,-7pt)$)
+  {Schultz, Dayan \& Montague 1997; Barto 1995};
+
+% ================= A. algorithm =================
+\node[heading] (Ahead) at ($(cite.south west)+(0,-32pt)$) {Algorithm};
+\node[anchor=north west, inner sep=0pt, text=grayD, font=\bfseries] (Ahead2) at ($(Ahead.south west)+(0,-12pt)$)
+  {Two learned functions};
+\matrix (F) [matrix of nodes, anchor=north west, at={($(Ahead2.south west)+(0,-10pt)$)}, column sep=16pt, row sep=10pt,
+  column 1/.style={nodes={anchor=base west, font=\large, text=ink}},
+  column 2/.style={nodes={anchor=base west, align=left, text width=\Wf}}]
+{
+  $V(s)$ & |[text=grayD]| State value: expected discounted future reward,
+    \mbox{$\mathbb{E}\big[r_t + \gamma r_{t+1} + \dots \mid s_t = s\big]$}.
+    \textcolor{tealS}{Critic, stored in ventral striatum（腹侧纹状体）} \\
+  $H(s,a)$ & |[text=grayD]| Action preference: how much the agent likes $a$ in $s$.
+    \textcolor{purpS}{Actor, stored in dorsal striatum（背侧纹状体）} \\
+  $\pi(a \mid s) = \dfrac{\exp H(s,a)}{\sum_b \exp H(s,b)}$ & |[text=grayD]| softmax: preference $\to$ policy \\
+};
+\savewidth{\Wf}{F-1-2.west}{\W,0}
+\node[anchor=north west, inner sep=0pt, text=grayD, font=\bfseries] (Arep) at ($(F.south west)+(0,-16pt)$)
+  {Repeat every time step $t$:};
+\matrix (S) [steps, at={($(Arep.south west)+(0,-12pt)$)}]
+{
+  1 & $\text{observe } s_t$ & |[text=grayS]| Cortex encodes the current state (visual cortex is one example input) \\
+  |[badge=purp]| 2 & $a_t \sim \pi(\cdot \mid s_t)$ &
+    |[text=purpS]| Actor picks: dorsal striatum $\to$ \mbox{thalamus（丘脑）} $\to$ motor cortex \\
+  3 & $r_t,\ s_{t+1} = \mathrm{env}(s_t, a_t)$ & |[text=grayS]| Environment returns reward and next state \\
+  |[badge=cora]| 4 & $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$ &
+    |[text=coraS]| Reward prediction error, sent as phasic dopamine: burst if better than expected, dip if worse \\
+  |[badge=teal]| 5 & $V(s_t) \leftarrow V(s_t) + \alpha_V\, \delta_t$ &
+    |[text=tealS]| Critic: move $V(s_t)$ toward the target $r_t + \gamma V(s_{t+1})$
+      (dopamine adjusts ventral striatum synapses) \\
+  |[badge=purp]| 6 & $H(s_t,a_t) \leftarrow H(s_t,a_t) + \alpha_\pi\, \delta_t$ &
+    |[text=purpS]| Actor: if $\delta_t > 0$, choose $a_t$ more often in $s_t$
+      (dopamine adjusts dorsal striatum synapses) \\
+};
+\savewidth{\Wd}{S-1-3.west}{\W,0}
+\coordinate (Aend) at (S.south west);
+
+% ================= B. brain map =================
+% brain faces left. row 1: motor cortex ... visual cortex   row 2: dorsal striatum   row 3: ventral striatum
+% row 4: environment (outside the brain), VTA (midbrain)
+\node[box=gray, anchor=north west] (mot) at ($(Aend)+(8pt,-84pt)$)
+  {\module{gray}{Motor cortex（运动皮层）}{Executes the chosen action $a_t$}};
+\node[box=purp, deep, anchor=north west] (dstr) at ($(mot.south east)+(-40pt,-58pt)$)
+  {\module{purp}{Dorsal striatum（背侧纹状体）: actor}{$a_t \sim \pi(\cdot \mid s_t) = \mathrm{softmax}\, H(s_t, \cdot)$\\[2pt]
+   $H(s_t,a_t) \leftarrow H(s_t,a_t) + \alpha_\pi\, \delta_t$}};
+\node[box=teal, deep, anchor=north west] (vstr) at ($(dstr.south west)+(24pt,-30pt)$)
+  {\module{teal}{Ventral striatum（腹侧纹状体）: critic}{$V(s_t),\ V(s_{t+1})$\\[2pt]
+   $V(s_t) \leftarrow V(s_t) + \alpha_V\, \delta_t$}};
+\node[box=cora, deep, anchor=north west] (vta) at ($(vstr.south west)+(0,-50pt)$)
+  {\module{cora}{VTA / SNc（中脑多巴胺神经元）}{$\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$}};
+\node[box=gray, anchor=east] (env) at ($(vta.west)+(-45pt,-8pt)$)
+  {\module{gray}{Environment}{$r_t,\ s_{t+1} = \mathrm{env}(s_t, a_t)$}};
+% visual cortex: right of both striatum boxes, so s_t can drop straight into them
+\path let \p1 = (dstr.east), \p2 = (vstr.east) in coordinate (R) at ({max(\x1,\x2)}, 0);
+\node[box=gray, anchor=north east] (vis) at ($(R |- mot.north)+(24pt,0)$)
+  {\module{gray}{Visual cortex}{$s_t = \mathrm{enc}(\text{scene})$}};
+
+\lobes{mot}{vis}
+\orient{frontal}{occipital}
+
+% arrows: straight where possible; only s_{t+1} goes round the outside
+\coordinate (sx) at ($(vis.south west)!0.5!(dstr.north east)$);  % x where visual cortex and dorsal striatum overlap
+\draw[arr=arrG] (sx |- vis.south) -- node[lab=grayS, right] {$s_t$} (sx |- dstr.north);
+\draw[arr=arrG] ([xshift=-12pt]vis.south east) |- node[lab=grayS, right, pos=0.3] {$s_t$} (vstr.east);
+\draw[arr=arrP] ([xshift=15pt]dstr.north west) -- node[lab=purpS, right] {$a_t$} ([xshift=15pt]dstr.north west |- mot.south);
+\draw[arr=arrG] (mot.south -| env.north) -- node[lab=grayS, right, pos=0.7] {$a_t$} (env.north);
+\draw[arr=arrG] ([yshift=-8pt]env.east) -- node[lab=grayS, below] {$r_t$} ([yshift=-8pt]env.east -| vta.west);
+\path let \p1 = (vis.east), \p2 = (vta.east) in coordinate (Rout) at ({max(\x1,\x2)+18pt}, 0);
+\draw[arr=arrG] (env.south) -- ++(0,-16pt) -| node[lab=grayS, left, pos=0.75] {$s_{t+1}$} (Rout |- vis.east) -- (vis.east);
+\draw[arr=arrT] ([xshift=-30pt]vstr.south) -- node[lab=tealS, left] {$V(s_t),\ V(s_{t+1})$} ([xshift=-30pt]vstr.south |- vta.north);
+\draw[arr=arrC] ([xshift=30pt]vstr.south |- vta.north) -- node[lab=coraS, right] {$\delta_t$} ([xshift=30pt]vstr.south);
+\draw[arr=arrC] ([yshift=8pt]vta.west) -| node[lab=coraS, left, pos=0.75] {$\delta_t$} ([xshift=12pt]dstr.south west);
+
+% step badges: which steps each module carries out
+\node[badge=gray] at (vis.north west) {1};
+\node[badge=purp] at (mot.north west) {2};
+\node[badge=purp] at ([xshift=-15pt]dstr.north east) {2};
+\node[badge=purp] at (dstr.north east) {6};
+\node[badge=teal] at (vstr.north east) {5};
+\node[badge=gray] at (env.north west) {3};
+\node[badge=cora] at (vta.north west) {4};
+
+% the brain map sets the content width \W of the whole figure
+\savewidth{\W}{O}{Rout}
+
+% legend
+\coordinate (L) at ($(frontal.west |- env.south)+(4.5pt,-50pt)$);
+\node[swatch=gray] (k1) at (L) {};
+\node[key, right=5pt of k1] (t1) {Cortex / environment};
+\node[swatch=purp, deep, right=22pt of t1] (k2) {};
+\node[key, right=5pt of k2] {Dashed = deep structure};
+\node[swatch=teal] (k3) at ($(L)+(0,-20pt)$) {};
+\node[key, right=5pt of k3] (t3) {Critic: learns $V$};
+\node[swatch=purp, right=22pt of t3] (k4) {};
+\node[key, right=5pt of k4] {Actor: learns $H$, i.e.\ $\pi$};
+\node[swatch=cora] (k5) at ($(L)+(0,-40pt)$) {};
+\node[key, right=5pt of k5] {Dopamine carries $\delta_t$ to both critic and actor};
+\node[para, text=note] (Bend) at ($(L)+(-4.5pt,-54pt)$)
+  {$a_t$ goes from dorsal striatum to motor cortex via the thalamus（丘脑）};
+
+% ================= C. synapses =================
+\node[heading] (Chead) at ($(Bend.south west)+(0,-48pt)$) {Why ``dopamine-gated corticostriatal plasticity''?};
+\node[para, text=grayD] (Cdef) at ($(Chead.south west)+(0,-12pt)$)
+  {corticostriatal（皮层-纹状体）: synapses from cortex onto striatum\\
+   plasticity（可塑性）: synapses changing their strength\\[8pt]
+   The brain has no table for $V(s)$. A striatal neuron computes it from its cortical inputs:};
+\node[display, text=ink] (Ceq1) at ($(Wm |- Cdef.south)+(0,-12pt)$)
+  {$V(s) = \sum_i w_i\, x_i(s)$};
+\node[para, text=grayD] (Cvar) at ($(Cdef.south west |- Ceq1.south)+(0,-12pt)$)
+  {$x_i(s)$: firing of cortical neuron $i$ in state $s$, i.e.\ the presynaptic（突触前）input\\
+   $w_i$: strength of synapse $i$, this is what is learned};
+\node[para, text=grayD] (Cstep) at ($(Cdef.south west |- Cvar.south)+(0,-12pt)$)
+  {Step 5 moves $V(s_t)$ by $\alpha_V \delta_t$ along its gradient, and $\partial V(s_t) / \partial w_i = x_i(s_t)$.
+   So it becomes a local rule that each synapse can apply by itself:};
+\node[display, text=tealS] (Ceq2) at ($(Wm |- Cstep.south)+(0,-12pt)$)
+  {$\Delta w_i = \alpha_V\, \delta_t\, x_i(s_t)$};
+\node[para, text=grayD] (Cwhen) at ($(Cstep.south west |- Ceq2.south)+(0,-12pt)$)
+  {(With one-hot $x(s)$, one neuron per state, this is exactly step 5.)
+   A synapse changes only if its input was active ($x_i > 0$) AND dopamine reports a surprise ($\delta_t \neq 0$):
+   two factors, presynaptic activity $\times$ dopamine.\\[8pt]
+   The actor works the same way, with $H(s,a) = \sum_i w_{ai}\, x_i(s)$ on the striatal neurons of action $a$.
+   Step 6 changes only $H(s_t, a_t)$, so only synapses onto the neurons of the chosen action change:};
+\node[display, text=purpS] (Ceq3) at ($(Wm |- Cwhen.south)+(0,-12pt)$)
+  {$\Delta w_{ai} = \alpha_\pi\, \delta_t\, x_i(s_t)\, [a = a_t]$};
+\node[para, text=grayD] (Cend) at ($(Cwhen.south west |- Ceq3.south)+(0,-12pt)$)
+  {Three factors: presynaptic $x_i$ $\times$ postsynaptic $[a = a_t]$ (1 for the chosen action's neurons, else 0) $\times$ dopamine $\delta_t$.};
+
+% ================= panel frames, full width =================
+\coordinate (XL) at (-14pt,0);
+\coordinate (XR) at (\W+14pt,0);
+\begin{pgfonlayer}{panels}
+  \node[panel, inner sep=0pt, fit={(XL |- Ahead.north) ($(XR |- Aend)+(0,-14pt)$) ($(Ahead.north)+(0,14pt)$)}] {};
+  \node[panel, inner sep=0pt, fit={(XL |- Chead.north) ($(XR |- Cend.south)+(0,-14pt)$) ($(Chead.north)+(0,14pt)$)}] {};
+\end{pgfonlayer}
+\end{tikzpicture}
+\end{document}
