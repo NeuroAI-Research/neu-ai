@@ -1,4 +1,4 @@
-# 2 2018 PFC - MetaRL
+# 3 2018 PFC - MetaRL
 
 - **Warning: the original paper (text below) is very unclear about how the algorithm actually works or how it is implemented by the brain, so I will make another custom note instead**
 
@@ -39,7 +39,7 @@
 
 ### A New Formulation
 
-![](../imgs/02_PFC-MetaRL.png)
+![](../imgs/03_PFC-MetaRL.png)
 
 - Figure 1. 
     - A. Agent architecture. 

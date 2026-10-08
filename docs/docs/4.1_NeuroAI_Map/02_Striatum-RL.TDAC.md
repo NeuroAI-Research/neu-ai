@@ -1,4 +1,4 @@
-# 2 Striatum - RL.TDAC
+# 2 1997 Striatum - RL.TDAC
 
 ![](./imgs/02_dopamine_RL.svg)
 
