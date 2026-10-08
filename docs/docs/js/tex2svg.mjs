@@ -10,6 +10,8 @@
 // Latin text and math use the TeX (Computer Modern) font; CJK characters are not in it, so MathJax
 // emits them as <text> elements, styled by the `text{...}` rule in the source SVG
 // (set font-size:1000px there: MathJax reserves 1em per CJK char but draws it at 0.884em).
+// Each label also gets an invisible <text> holding its source, so it can be selected and copied
+// when the SVG is opened directly or embedded with <object> (never inside an <img>).
 // Usage (from docs/):  node docs/js/tex2svg.mjs in.src.svg out.svg
 import fs from 'fs';
 import { mathjax } from 'mathjax-full/js/mathjax.js';
@@ -40,7 +42,10 @@ function textToTex(content, bold) {
     .join('');
 }
 
-function render(attrs, tex, defaultAnchor) {
+const escapeXml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// `copy` is the label's source text: laid over the paths as invisible real <text>, so it can be selected and copied
+function render(attrs, tex, defaultAnchor, copy) {
   const x = +attr(attrs, 'x'), y = +attr(attrs, 'y');
   const size = +attr(attrs, 'size', 13);
   const fill = attr(attrs, 'fill', '#3d3d3a');
@@ -60,18 +65,22 @@ function render(attrs, tex, defaultAnchor) {
   adaptor.setAttribute(svg, 'height', h.toFixed(2));
   adaptor.setAttribute(svg, 'color', fill); // MathJax paints with currentColor
   adaptor.setAttribute(svg, 'overflow', 'visible'); // CJK <text> glyphs may poke past the estimated box
-  adaptor.removeAttribute(svg, 'style');
+  adaptor.setAttribute(svg, 'style', 'user-select:none'); // CJK <text> inside would otherwise be copied twice
   adaptor.removeAttribute(svg, 'role');
   adaptor.removeAttribute(svg, 'focusable');
-  return adaptor.outerHTML(svg);
+  // inline style, not a font-size attribute: the source's text{font-size:1000px} rule would override that
+  const overlay = `<text x="${left.toFixed(2)}" y="${y}" style="font-size:${size}px" fill="transparent"`
+    + ` textLength="${w.toFixed(2)}" lengthAdjust="spacingAndGlyphs">${escapeXml(copy)}</text>`;
+  return adaptor.outerHTML(svg) + overlay;
 }
 
 const [src, out] = process.argv.slice(2);
 const result = fs
   .readFileSync(src, 'utf8')
-  .replace(/<tex\b([^>]*)>([\s\S]*?)<\/tex>/g, (_, attrs, tex) => render(attrs, unescapeXml(tex.trim()), 'middle'))
+  .replace(/<tex\b([^>]*)>([\s\S]*?)<\/tex>/g, (_, attrs, tex) =>
+    render(attrs, unescapeXml(tex.trim()), 'middle', `$${unescapeXml(tex.trim())}$`))
   .replace(/<txt\b([^>]*)>([\s\S]*?)<\/txt>/g, (_, attrs, content) =>
-    render(attrs, textToTex(content, attr(attrs, 'bold') !== undefined), 'start'));
+    render(attrs, textToTex(content, attr(attrs, 'bold') !== undefined), 'start', unescapeXml(content.trim())));
 // glyph shapes shared by all labels, written once right before </svg>
 const defs = adaptor.outerHTML(doc.outputJax.fontCache.getCache());
 fs.writeFileSync(out, result.replace(/<\/svg>\s*$/, `${defs}\n</svg>\n`));

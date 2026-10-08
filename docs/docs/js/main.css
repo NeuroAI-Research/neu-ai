@@ -6,3 +6,11 @@ img {
   margin: auto;
   display: block;
 }
+
+/* SVG diagrams embedded with <object> (not <img>) so their text can be selected */
+object.fig {
+  margin: auto;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}

@@ -1,6 +1,6 @@
 # 2 1997 Striatum - RL.TDAC
 
-![](./imgs/02_dopamine_RL.svg)
+<object class="fig" data="../imgs/02_dopamine_RL.svg" type="image/svg+xml"></object>
 
 **The claim.** Phasic dopamine reports one number, the TD error $\delta_t$. That one number is enough to train both a value predictor (critic) and a policy (actor). Below we derive this from the goal "maximize reward", then map it onto the brain.
 

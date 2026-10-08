@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="1582" viewBox="0 0 680 1582" role="img">
+<title>Prefrontal cortex as a meta-RL system</title>
+<style>
+text{font-family:"Songti SC","STSong","SimSun","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1000px}
+.panel{fill:#FAFAF8;stroke:#D3D1C7;stroke-width:0.5}
+.lobe{fill:none;stroke:#B4B2A9;stroke-width:1;stroke-dasharray:5 4}
+.deep{fill:none;stroke:#888780;stroke-width:0.5;stroke-dasharray:4 3}
+.loop{fill:none;stroke:#7F77DD;stroke-width:0.8;stroke-dasharray:5 4}
+.c-gray{fill:#F1EFE8;stroke:#5F5E5A}.c-purple{fill:#EEEDFE;stroke:#534AB7}
+.c-teal{fill:#E1F5EE;stroke:#0F6E56}.c-coral{fill:#FAECE7;stroke:#993C1D}
+</style>
+<rect x="0" y="0" width="680" height="1582" rx="12" fill="#ffffff"/>
+<defs><marker id="m888780" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="m7F77DD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#7F77DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="m1D9E75" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="mD85A30" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#D85A30" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- ============ Title ============ -->
+<txt x="40" y="38" size="22" bold="1" fill="#2c2c2a">Prefrontal cortex as a meta-RL system</txt>
+<txt x="40" y="62" fill="#73726c">Wang et al. 2018; Wang et al. 2016; Duan et al. 2016 (RL$^2$)</txt>
+
+<!-- ============ A. Algorithm ============ -->
+<rect class="panel" x="20" y="80" width="640" height="540" rx="8"/>
+<txt x="40" y="108" size="15" bold="1" fill="#2c2c2a">Algorithm</txt>
+
+<txt x="40" y="136" bold="1">Prefrontal network = LSTM with weights $\theta$ and memory (activity) $h$</txt>
+<txt x="40" y="158">Input: observation $o_t$, plus its own last action $a_{t-1}$ and last reward $r_{t-1}$</txt>
+<txt x="40" y="176">Output: policy $\pi_\theta(a \mid h)$ (actor) and value $V_\theta(h)$ (critic)</txt>
+<txt x="40" y="204" bold="1">Meta-environment: a new task every episode</txt>
+<txt x="40" y="226">$\tau \sim p(\tau)$, e.g. a two-armed bandit with random reward probabilities $p_L, p_R$</txt>
+<txt x="40" y="244">Memory $h$ is reset only at the start of an episode, never between trials</txt>
+
+<txt x="40" y="274" bold="1">Repeat for every episode:</txt>
+
+<circle cx="48" cy="299" r="9" fill="#5F5E5A"/><txt x="48" y="303" size="12" bold="1" fill="#ffffff" anchor="middle">1</txt>
+<tex x="66" y="304" size="16" anchor="start">\tau \sim p(\tau),\ \ h_0 = 0</tex>
+<txt x="350" y="303" fill="#5F5E5A">New task; clear the memory</txt>
+
+<rect class="loop" x="30" y="318" width="620" height="154" rx="6"/>
+<txt x="40" y="336" size="12" fill="#534AB7">Inner loop, every trial $t$: memory $h$ changes, weights $\theta$ fixed</txt>
+
+<circle cx="48" cy="361" r="9" fill="#534AB7"/><txt x="48" y="365" size="12" bold="1" fill="#ffffff" anchor="middle">2</txt>
+<tex x="66" y="366" size="16" anchor="start">h_t = \mathrm{LSTM}_\theta\big(h_{t-1},\ [\,o_t,\ a_{t-1},\ r_{t-1}\,]\big)</tex>
+<txt x="350" y="360" fill="#534AB7">Loop activity folds the last action and</txt>
+<txt x="350" y="378" fill="#534AB7">reward into memory (recurrent dynamics)</txt>
+
+<circle cx="48" cy="401" r="9" fill="#534AB7"/><txt x="48" y="405" size="12" bold="1" fill="#ffffff" anchor="middle">3</txt>
+<tex x="66" y="406" size="16" anchor="start">a_t \sim \pi_\theta(\cdot \mid h_t)</tex>
+<txt x="350" y="400" fill="#534AB7">Act from memory: explore early,</txt>
+<txt x="350" y="418" fill="#534AB7">exploit once the better arm is clear</txt>
+
+<circle cx="48" cy="441" r="9" fill="#5F5E5A"/><txt x="48" y="445" size="12" bold="1" fill="#ffffff" anchor="middle">4</txt>
+<tex x="66" y="446" size="16" anchor="start">r_t,\ o_{t+1} = \mathrm{env}_\tau(a_t)</tex>
+<txt x="350" y="449" fill="#5F5E5A">Task returns reward and next observation</txt>
+
+<txt x="40" y="494" size="12" fill="#993C1D">Outer loop, after each episode: weights $\theta$ change</txt>
+
+<circle cx="48" cy="517" r="9" fill="#993C1D"/><txt x="48" y="521" size="12" bold="1" fill="#ffffff" anchor="middle">5</txt>
+<tex x="66" y="522" size="16" anchor="start">\delta_t = R_t - V_\theta(h_t)</tex>
+<txt x="350" y="516" fill="#993C1D">RPE, broadcast as phasic dopamine</txt>
+<txt x="350" y="534" fill="#993C1D">($R_t$: n-step return)</txt>
+
+<circle cx="48" cy="557" r="9" fill="#993C1D"/><txt x="48" y="561" size="12" bold="1" fill="#ffffff" anchor="middle">6</txt>
+<tex x="66" y="562" size="16" anchor="start">\theta \leftarrow \theta + \alpha\, \delta_t\, \nabla_\theta \log \pi_\theta(a_t \mid h_t) + \dots</tex>
+<txt x="350" y="556" fill="#993C1D">A3C: dopamine adjusts PFC and striatum</txt>
+<txt x="350" y="574" fill="#993C1D">synapses, a small step per episode</txt>
+
+<txt x="40" y="604" bold="1">Test: freeze $\theta$, sample a new $\tau$. Behaviour still improves over trials, so it lives in $h$.</txt>
+
+<!-- ============ B. Brain map ============ -->
+<g transform="translate(0,620)">
+<txt x="40" y="30" fill="#73726c">$\leftarrow$ Front</txt>
+<txt x="340" y="30" size="14" bold="1" fill="#2c2c2a" anchor="middle">Left hemisphere（左半球）, seen from the left</txt>
+<txt x="640" y="30" fill="#73726c" anchor="end">Back $\rightarrow$</txt>
+<g transform="translate(0,24)">
+<rect class="lobe" x="40" y="40" width="260" height="106" rx="12"/><txt x="54" y="64" size="14" bold="1" fill="#2c2c2a">Frontal lobe（额叶）</txt>
+<rect class="lobe" x="310" y="40" width="120" height="150" rx="12"/><txt x="322" y="64" size="14" bold="1" fill="#2c2c2a">Parietal（顶叶）</txt>
+<rect class="lobe" x="440" y="40" width="200" height="106" rx="12"/><txt x="452" y="64" size="14" bold="1" fill="#2c2c2a">Occipital（枕叶）</txt>
+
+<rect class="c-purple" x="48" y="76" width="244" height="56" rx="4" stroke-width="0.5"/>
+<txt x="58" y="96" size="14" fill="#3C3489">Prefrontal cortex（前额叶）</txt>
+<tex x="58" y="120" size="14" fill="#534AB7" anchor="start">a_t \sim \pi_\theta(\cdot \mid h_t)</tex>
+<circle cx="48" cy="76" r="9" fill="#534AB7"/><txt x="48" y="80" size="12" bold="1" fill="#ffffff" anchor="middle">2</txt><circle cx="70" cy="76" r="9" fill="#534AB7"/><txt x="70" y="80" size="12" bold="1" fill="#ffffff" anchor="middle">3</txt><circle cx="292" cy="76" r="9" fill="#993C1D"/><txt x="292" y="80" size="12" bold="1" fill="#ffffff" anchor="middle">6</txt>
+<rect class="c-gray" x="450" y="76" width="182" height="56" rx="4" stroke-width="0.5"/>
+<txt x="460" y="96" size="14" fill="#444441">Visual cortex</txt>
+<tex x="460" y="120" size="14" fill="#5F5E5A" anchor="start">o_t = \mathrm{enc}(\text{scene})</tex>
+<rect class="c-purple" x="320" y="236" width="290" height="56" rx="4" stroke-width="0.5" stroke-dasharray="4 3"/>
+<txt x="330" y="256" size="14" fill="#3C3489">Striatum（纹状体）</txt>
+<tex x="330" y="280" size="14" fill="#534AB7" anchor="start">V_\theta(h_t)\quad \text{(ventral part)}</tex>
+<circle cx="320" cy="236" r="9" fill="#534AB7"/><txt x="320" y="240" size="12" bold="1" fill="#ffffff" anchor="middle">2</txt><circle cx="610" cy="236" r="9" fill="#993C1D"/><txt x="610" y="240" size="12" bold="1" fill="#ffffff" anchor="middle">6</txt>
+<rect class="c-purple" x="118" y="250" width="182" height="56" rx="4" stroke-width="0.5" stroke-dasharray="4 3"/>
+<txt x="128" y="270" size="14" fill="#3C3489">Thalamus（丘脑）</txt>
+<txt x="128" y="294" size="12" fill="#534AB7">Gated relay back to PFC</txt>
+<circle cx="118" cy="250" r="9" fill="#534AB7"/><txt x="118" y="254" size="12" bold="1" fill="#ffffff" anchor="middle">2</txt>
+<rect class="c-gray" x="40" y="352" width="252" height="56" rx="4" stroke-width="0.5"/>
+<txt x="50" y="372" size="14" fill="#444441">Environment (task $\tau$)</txt>
+<tex x="50" y="396" size="14" fill="#5F5E5A" anchor="start">r_t,\ o_{t+1} = \mathrm{env}_\tau(a_t)</tex>
+<circle cx="40" cy="352" r="9" fill="#5F5E5A"/><txt x="40" y="356" size="12" bold="1" fill="#ffffff" anchor="middle">4</txt>
+<rect class="c-coral" x="320" y="352" width="290" height="56" rx="4" stroke-width="0.5" stroke-dasharray="4 3"/>
+<txt x="330" y="372" size="14" fill="#712B13">VTA / SNc（中脑多巴胺神经元）</txt>
+<tex x="330" y="396" size="14" fill="#993C1D" anchor="start">\delta_t = R_t - V_\theta(h_t)</tex>
+<circle cx="320" cy="352" r="9" fill="#993C1D"/><txt x="320" y="356" size="12" bold="1" fill="#ffffff" anchor="middle">5</txt>
+
+<!-- observation: world -> visual cortex -> PFC -->
+<path d="M166 408 V422 H656 V104 H634" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#m888780)"/>
+<tex x="650" y="327" size="14" fill="#5F5E5A" anchor="end">o_{t+1}</tex>
+<path d="M450 100 H294" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#m888780)"/>
+<tex x="370" y="94" size="14" fill="#5F5E5A" anchor="middle">o_t</tex>
+<!-- action out, reward in -->
+<path d="M62 132 V350" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#m888780)"/>
+<tex x="68" y="334" size="14" fill="#5F5E5A" anchor="start">a_t</tex>
+<path d="M98 352 V134" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#m888780)"/>
+<tex x="104" y="334" size="14" fill="#5F5E5A" anchor="start">r_t</tex>
+<path d="M292 394 H318" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#m888780)"/>
+<tex x="305" y="414" size="14" fill="#5F5E5A" anchor="middle">r_t</tex>
+<!-- the loop: PFC -> striatum -> thalamus -> PFC; its activity is h -->
+<path d="M292 124 H345 V234" fill="none" stroke="#7F77DD" stroke-width="1.5" marker-end="url(#m7F77DD)"/>
+<path d="M320 286 H302" fill="none" stroke="#7F77DD" stroke-width="1.5" marker-end="url(#m7F77DD)"/>
+<path d="M210 250 V134" fill="none" stroke="#7F77DD" stroke-width="1.5" marker-end="url(#m7F77DD)"/>
+<txt x="356" y="220" size="12" fill="#534AB7">loop: $h_t = \mathrm{LSTM}_\theta(h_{t-1}, [o_t, a_{t-1}, r_{t-1}])$</txt>
+<!-- value to VTA, dopamine to synapses -->
+<path d="M420 292 V350" fill="none" stroke="#1D9E75" stroke-width="1.5" marker-end="url(#m1D9E75)"/>
+<tex x="412" y="327" size="14" fill="#0F6E56" anchor="end">V_\theta(h_t)</tex>
+<path d="M560 352 V294" fill="none" stroke="#D85A30" stroke-width="2" marker-end="url(#mD85A30)"/>
+<tex x="568" y="327" size="14" fill="#993C1D" anchor="start">\delta_t</tex>
+<path d="M320 364 H306 V150 H294" fill="none" stroke="#D85A30" stroke-width="2" marker-end="url(#mD85A30)"/>
+<tex x="300" y="210" size="14" fill="#993C1D" anchor="end">\delta_t</tex>
+<rect x="40" y="442" width="14" height="14" rx="3" class="c-gray" stroke-width="0.5"/>
+<txt x="60" y="454" fill="#73726c">Cortex / environment</txt>
+<rect x="330" y="442" width="14" height="14" rx="3" fill="none" stroke="#888780" stroke-width="0.8" stroke-dasharray="3 2"/>
+<txt x="350" y="454" fill="#73726c">Dashed = deep structure</txt>
+<rect x="40" y="468" width="14" height="14" rx="3" class="c-purple" stroke-width="0.5"/>
+<txt x="60" y="480" fill="#73726c">PFC + striatum + thalamus = the LSTM; its activity is the memory $h$</txt>
+<rect x="40" y="494" width="14" height="14" rx="3" class="c-coral" stroke-width="0.5"/>
+<txt x="60" y="506" fill="#73726c">Dopamine $\delta_t$ updates the loop synapses $\theta$ after each episode, never $h$:</txt>
+<txt x="40" y="532" fill="#73726c">Model (A3C): $\Delta\theta \propto \delta_t\, \nabla_\theta \big(\log \pi_\theta(a_t \mid h_t) + \beta_V V_\theta(h_t)\big)$, all weights</txt>
+<txt x="40" y="558" fill="#73726c">Brain: a local rule at each synapse, $\Delta w \propto \delta_t \times \text{pre} \times \text{post}$ (no backprop)</txt>
+<txt x="40" y="584" fill="#73726c">$a_{t-1}$ reaches PFC as an efference copy（传出副本）of its own last action</txt>
+</g>
+</g>
+
+<!-- ============ C. What is learned ============ -->
+<rect class="panel" x="20" y="1256" width="640" height="306" rx="8"/>
+<txt x="40" y="1284" size="15" bold="1" fill="#2c2c2a">What is actually learned?</txt>
+<txt x="40" y="1312" bold="1" fill="#993C1D">Weights $\theta$: changed by dopamine (A3C) after each episode</txt>
+<txt x="56" y="1330">The recipe: how to fold $(a, r)$ into memory and act on it. Fixed at test.</txt>
+<txt x="40" y="1358" bold="1" fill="#534AB7">Memory $h$: activity of the PFC loop, changes every trial</txt>
+<txt x="56" y="1376">This task's answer, e.g. “the right arm pays more”. Erased at the next episode.</txt>
+<txt x="40" y="1408">Seen from outside, the inner loop is just a fixed policy with memory:</txt>
+<tex x="340" y="1444" size="17">a_t \sim \pi_\theta\big(\cdot \mid h_t\big),\qquad h_t = f_\theta\big(o_{\le t},\ a_{&lt;t},\ r_{&lt;t}\big)</tex>
+<txt x="40" y="1476">The task $\tau$ is a hidden variable of the meta-environment. Within an episode,</txt>
+<txt x="40" y="1494">“learning” = inferring $\tau$ from the history of actions and rewards.</txt>
+<txt x="40" y="1522" fill="#73726c">Caveat: the paper calls this a “second RL algorithm”. Unlike PPO, it cannot train another</txt>
+<txt x="40" y="1540" fill="#73726c">network, and it only works on tasks from $p(\tau)$. Learned weight-update rules: LPG, DiscoRL.</txt>
+</svg>
