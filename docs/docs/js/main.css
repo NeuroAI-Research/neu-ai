@@ -2,6 +2,19 @@
   margin: 0 !important;
 }
 
+/* Material caps the page at 1220px; widen it just enough that the 832px diagrams (see tex2svg.sh --zoom)
+   fit beside both sidebars: 832 + 48 content padding + 2 x 242 sidebars = 1364px */
+.md-grid {
+  max-width: 1364px;
+}
+
+/* Center tables in the content column (Material makes their wrapper an inline-block, which sits left) */
+.md-typeset__table {
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 img {
   margin: auto;
   display: block;

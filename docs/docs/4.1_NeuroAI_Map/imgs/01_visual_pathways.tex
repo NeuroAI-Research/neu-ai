@@ -10,17 +10,17 @@
 % brain faces left. occipital (right): V1, V2 in the middle, V3 above, V4 below
 % dorsal stream goes up and forward (V3, MT -> parietal), ventral stream down and forward (V4 -> IT)
 \node[area=gray, minimum height=96pt] (v2) at (0,0) {{\large V2}\\[3pt] Contours\\\ex{Edges joined}\\\ex{into outlines}};
-\node[area=gray, minimum height=96pt, right=14pt of v2] (v1) {{\large V1}\\[3pt] Edge orientation\\\ex{Short edges,}\\\ex{each spot}};
+\node[area=gray, minimum height=96pt, right=14pt of v2] (v1) {{\large V1}\\[3pt] Edge\\orientation\\\ex{Short edges,}\\\ex{each spot}};
 \path let \p1 = (v2.west), \p2 = (v1.east) in
   node[area=teal, minimum width=\x2-\x1, anchor=south west] (v3) at ($(v2.north west)+(0,16pt)$) {{\large V3}\\[3pt] Form, depth\\\ex{How far away?}}
   node[area=purp, minimum width=\x2-\x1, anchor=north west] (v4) at ($(v2.south west)+(0,-40pt)$) {{\large V4}\\[3pt] Shape, colour\\$\approx$ CNN middle layer\\\ex{Is it round? Is it red?}};
 \node[area=teal, anchor=east] (mt) at ($(v2.west)+(-22pt,-14pt)$) {{\large MT / V5}\\[3pt] Motion\\\ex{Which way, how fast?}};
 \node[area=teal, anchor=east] (ppc) at ($(v3.west)+(-36pt,0)$)
-  {{\large Posterior parietal cortex}\\（后顶叶皮层）\\[3pt] Spatial location, action planning\\\ex{Where is it? How do I grab it?}};
+  {{\large Posterior parietal cortex}\\（后顶叶皮层）\\[3pt] Spatial location,\\action planning\\\ex{Where is it?}\\\ex{How do I grab it?}};
 \node[area=purp, anchor=east] (it) at ($(v4.west)+(-80pt,0)$)
   {{\large IT cortex}\\（下颞叶皮层）\\[3pt] Object recognition\\$\approx$ CNN top layer\\\ex{What is it? ``A cup''}};
-\node[area=gray, anchor=north east] (pfc) at ($(ppc.south west)+(-40pt,-30pt)$)
-  {{\large Prefrontal cortex}\\（前额叶皮层）\\[3pt] Decisions, working memory\\\ex{Pick an action,}\\\ex{keep the goal in mind}};
+\node[area=gray, anchor=north east] (pfc) at ($(ppc.south west)+(-32pt,-30pt)$)
+  {{\large Prefrontal cortex}\\（前额叶皮层）\\[3pt] Decisions,\\working memory\\\ex{Pick an action,}\\\ex{keep the goal in mind}};
 
 % lobes
 \begin{pgfonlayer}{lobes}
