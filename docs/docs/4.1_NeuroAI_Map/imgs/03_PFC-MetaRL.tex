@@ -11,15 +11,22 @@
 \node[title] (title) at (0,0) {Prefrontal cortex as a meta-RL system};
 \node[para, text=note] (cite) at ($(title.south west)+(0,-7pt)$)
   {Wang et al.\ 2018; Wang et al.\ 2016; Duan et al.\ 2016 (RL$^2$)};
+\node[anchor=north west, draw=coraS, fill=coraF, line width=1pt, rounded corners=6pt, inner sep=10pt,
+  align=left, text width=\W-20pt, text=ink] (essence) at ($(cite.south west)+(0,-14pt)$) {%
+  \textbf{\textcolor{coraD}{Ricky's critique: so-called meta-RL is just standard RL with one difference}}\\[5pt]
+  Standard RL asks: given this observation $o_t$, what is the best action?\\[2pt]
+  Meta-RL asks: given this history $(o, a, r)_{\le t}$, encoded in the RNN memory $h_t$, what is the best action?\\[5pt]
+  So ``meta-RL'' is the true standard RL: its state includes the time dimension. ``Standard RL'' is the degenerate case
+  of a history of length 1, which in most environments means incomplete information.};
 
 % ================= A. algorithm =================
-\node[heading] (Ahead) at ($(cite.south west)+(0,-32pt)$) {Algorithm};
+\node[heading] (Ahead) at ($(essence.south west)+(0,-32pt)$) {Algorithm};
 \node[para, text=grayD] (Adef) at ($(Ahead.south west)+(0,-12pt)$) {%
   \textbf{Prefrontal network = LSTM with weights $\theta$ and memory (activity) $h$}\\[4pt]
   Input: observation $o_t$, plus its own last action $a_{t-1}$ and last reward $r_{t-1}$\\[2pt]
   Output, read out from $h_t$: policy $\pi_t = \pi_\theta(\cdot \mid h_t) = \mathrm{softmax}(W_\pi h_t)$ (actor)
-  and value $V_\theta(h_t) = w_V^{\top} h_t$ (critic)\\[2pt]
-  $\theta$ = all weights: the LSTM's, plus the read-outs $W_\pi$ and $w_V$\\[9pt]
+  and value $V_\theta(h_t) = W_V h_t$ (critic)\\[2pt]
+  $\theta$ = all weights: the LSTM's, plus the read-outs $W_\pi$ and $W_V$\\[9pt]
   \textbf{Meta-environment: a new task every episode}\\[4pt]
   $\tau \sim p(\tau)$, e.g.\ a two-armed bandit with random reward probabilities $p_L, p_R$.
   Memory $h$ is reset only at the start of an episode, never between trials.\\[9pt]
@@ -30,16 +37,17 @@
   1 & $\tau \sim p(\tau),\ \ h_0 = 0$ & |[text=grayS]| New task; clear the memory \\
   |[spacer]| . & & \\
   |[badge=purp]| 2 & $h_t = \mathrm{LSTM}_\theta\big(h_{t-1},\ [\,o_t,\ a_{t-1},\ r_{t-1}\,]\big)$ &
-    |[text=purpS]| Loop activity folds the last action and reward into memory \\
+    |[text=purpS]| Loop activity folds the new observation, last action and reward into memory \\
   |[badge=purp]| 3 & $a_t \sim \pi_\theta(\cdot \mid h_t)$ &
-    |[text=purpS]| Act from memory: explore early, exploit once the better arm is clear \\
+    |[text=purpS]| Act from memory, i.e.\ from the whole history so far, not from $o_t$ alone \\
   4 & $r_t,\ o_{t+1} = \mathrm{env}_\tau(a_t)$ & |[text=grayS]| Task returns reward and next observation \\
   |[spacer]| . & & \\
   |[badge=cora]| 5 & $\delta_t = R_t - V_\theta(h_t)$ &
     |[text=coraS]| Reward prediction error, sent as phasic dopamine \\
   |[badge=cora]| 6 & $\theta \leftarrow \theta + \alpha \sum_t \delta_t\, \nabla_\theta
-      \big[\log \pi_\theta(a_t \mid h_t)$ & |[text=coraS]| A3C: actor term $+$ critic term \\
-  |[spacer]| . & $\hphantom{\theta \leftarrow \theta + \alpha \sum_t \delta_t\, \nabla_\theta \big[} + \beta_V V_\theta(h_t)\big]$ & \\
+      \big[\log \pi_\theta(a_t \mid h_t)$ & |[text=coraS]| A3C: actor term $+$ critic term \\[-7pt]
+  |[spacer]| . & $\hphantom{\theta \leftarrow \theta + \alpha \sum_t \delta_t\, \nabla_\theta \big[} + \beta_V V_\theta(h_t)\big]$ &
+    |[text=coraS]| ($+$ entropy bonus, omitted here) \\
 };
 \savewidth{\Wd}{S-1-3.west}{\W,0}
 % the inner loop: steps 2-4
@@ -51,8 +59,10 @@
 \node[anchor=base west, text=coraS, inner sep=0pt] at (S-6-1.base west) {Outer loop, after each episode: weights $\theta$ change};
 \node[para, text=coraS] (Anote) at ($(S.south west)+(0,-10pt)$)
   {$R_t = r_t + \gamma r_{t+1} + \dots + \gamma^{n} V_\theta(h_{t+n})$ is the $n$-step return.
-   The critic term $\beta_V \delta_t \nabla_\theta V_\theta = -\nabla_\theta \tfrac{\beta_V}{2} \delta_t^2$ (with $R_t$ held fixed).
-   The gradient reaches the LSTM by backprop through time; the entropy bonus is omitted.};
+   The actor wants to maximise expected return; the policy gradient, with $\delta_t$ as the advantage, gives the actor term $\delta_t \nabla_\theta \log \pi_\theta$.
+   The critic wants $V_\theta(h_t)$ to predict $R_t$, so it minimises $\tfrac{\beta_V}{2} \delta_t^2$ (target $R_t$ held fixed);
+   gradient descent on it gives the critic term $\beta_V \delta_t \nabla_\theta V_\theta$.
+   The gradient reaches the LSTM by backprop through time.};
 \node[para, text=grayD, font=\bfseries] (Atest) at ($(Anote.south west)+(0,-14pt)$)
   {Test: freeze $\theta$, sample a new $\tau$. Behaviour still improves over trials, so it lives in $h$.};
 
@@ -63,8 +73,8 @@
   {\module{purp}{Prefrontal cortex（前额叶）}{$a_t \sim \pi_t = \mathrm{softmax}(W_\pi h_t)$\\[2pt]
    $W_\pi \leftarrow W_\pi + \alpha \sum_t \delta_t\, (e_{a_t} - \pi_t)\, h_t^{\top}$}};
 \node[box=purp, deep, anchor=north west] (str) at ($(pfc.south west)+(28pt,-62pt)$)
-  {\module{purp}{Striatum（纹状体）}{$V_\theta(h_t) = w_V^{\top} h_t$ (ventral)\\[2pt]
-   $w_V \leftarrow w_V + \alpha \beta_V \sum_t \delta_t\, h_t$}};
+  {\module{purp}{Striatum（纹状体）}{$V_\theta(h_t) = W_V h_t$ (ventral)\\[2pt]
+   $W_V \leftarrow W_V + \alpha \beta_V \sum_t \delta_t\, h_t^{\top}$}};
 \node[box=purp, deep, right=18pt of str] (thal)
   {\module{purp}{Thalamus（丘脑）}{Gated relay\\back to PFC}};
 \node[box=gray, right=30pt of thal] (env)
@@ -124,10 +134,10 @@
   {PFC + striatum + thalamus = the LSTM of step 2; its activity is the memory $h$};
 \node[swatch=cora] (k4) at ($(L |- t3.south)+(0,-11pt)$) {};
 \node[keyw, anchor=north west] (t4) at ($(k4.north east)+(5pt,4pt)$)
-  {Dopamine $\delta_t$ drives step 6. The rules in the boxes are step 6 for the read-outs, since\\[3pt]
+  {Dopamine $\delta_t$ drives step 6. For the read-outs, step 6 needs the gradients\\[3pt]
    \hspace*{10pt}$\nabla_{W_\pi} \log \pi_\theta(a_t \mid h_t) = (e_{a_t} - \pi_t)\, h_t^{\top}, \quad
-   \nabla_{w_V} V_\theta(h_t) = h_t$\\[3pt]
-   ($e_{a_t}$: one-hot vector of $a_t$).
+   \nabla_{W_V} V_\theta(h_t) = h_t^{\top}$\\[3pt]
+   ($e_{a_t}$: one-hot vector of $a_t$), which give the rules in the boxes.
    Each is dopamine $\delta_t$ $\times$ presynaptic $h_t$ $\times$ a postsynaptic term ($e_{a_t} - \pi_t$, or 1): a local rule.
    The LSTM weights get the same $\delta_t$, but their gradient needs backprop through time.};
 \node[para, text=note] (Bend) at ($(frontal.west |- t4.south)+(0,-10pt)$)
@@ -137,21 +147,24 @@
 \node[heading] (Chead) at ($(Bend.south west)+(0,-48pt)$) {What is actually learned?};
 \tikzset{learned/.style={box=#1, anchor=north west, text width={\W-14pt}}}
 \node[learned=cora] (Cw) at ($(Chead.south west)+(0,-14pt)$)
-  {\textcolor{coraD}{\textbf{Weights $\theta$}}: changed by dopamine (step 6) after each episode.\\[2pt]
-   The recipe: how to fold $(a, r)$ into memory and act on it. Fixed at test.};
+  {\textcolor{coraD}{\textbf{Weights $\theta$}}: changed by dopamine (step 6) after each episode, fixed at test. Three jobs:\\[2pt]
+   \hspace*{10pt}LSTM: how to encode the history into memory $h$\\[1pt]
+   \hspace*{10pt}Actor $W_\pi$: the best action given a memory\\[1pt]
+   \hspace*{10pt}Critic $W_V$: the future value of a memory};
 \node[learned=purp] (Cm) at ($(Cw.south west)+(0,-10pt)$)
   {\textcolor{purpD}{\textbf{Memory $h$}}: activity of the PFC loop, changes every trial.\\[2pt]
-   This task's answer, e.g.\ ``the right arm pays more''. Erased at the next episode.};
+   The state: a summary of the history so far, keeping what matters for acting
+   (in the bandit, e.g.\ ``the right arm pays more''). Reset at the next episode.};
 \node[para, text=grayD] (Cout) at ($(Cm.south west)+(0,-16pt)$)
-  {Seen from outside, the inner loop is just a fixed policy with memory:};
+  {So the whole system is standard actor-critic, with memory $h_t$ as the state in place of $o_t$:};
 \node[display, text=ink] (Ceq) at ($(Wm |- Cout.south)+(0,-12pt)$)
-  {$a_t \sim \pi_\theta\big(\cdot \mid h_t\big), \qquad h_t = f_\theta\big(o_{\le t},\ a_{<t},\ r_{<t}\big)$};
+  {$h_t = f_\theta\big(o_{\le t},\ a_{<t},\ r_{<t}\big), \qquad a_t \sim \pi_\theta\big(\cdot \mid h_t\big), \qquad V_\theta(h_t)$};
 \node[para, text=grayD] (Ctau) at ($(O |- Ceq.south)+(0,-12pt)$)
-  {The task $\tau$ is a hidden variable of the meta-environment. Within an episode,
-   ``learning'' = inferring $\tau$ from the history of actions and rewards.};
+  {With $\theta$ frozen, behaviour still improves over trials simply because the history grows.
+   Identifying the bandit's hidden $\tau$ is one example of what a history can reveal.};
 \node[para, text=note] (Cend) at ($(Ctau.south west)+(0,-10pt)$)
-  {Caveat: the paper calls this a ``second RL algorithm''. Unlike PPO, it cannot train another
-   network, and it only works on tasks from $p(\tau)$. Learned weight-update rules: LPG, DiscoRL.};
+  {The paper calls this improvement a ``second RL algorithm'' learned by the first;
+   here it is the same RL with history as the state. Methods that do learn an RL update rule: LPG, DiscoRL.};
 
 % ================= panel frames, as wide as the content =================
 \coordinate (XL) at (-14pt,0);

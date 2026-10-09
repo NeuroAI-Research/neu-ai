@@ -86,8 +86,8 @@
 % step badges: which steps each module carries out
 \node[badge=gray] at (vis.north west) {1};
 \node[badge=purp] at (mot.north west) {2};
-\node[badge=purp] at ([xshift=-15pt]dstr.north east) {2};
-\node[badge=purp] at (dstr.north east) {6};
+\node[badge=purp] at ([xshift=-29pt]sx |- dstr.north) {2};  % left of the s_t arrow head
+\node[badge=purp] at ([xshift=-14pt]sx |- dstr.north) {6};
 \node[badge=teal] at (vstr.north east) {5};
 \node[badge=gray] at (env.north west) {3};
 \node[badge=cora] at (vta.north west) {4};
@@ -133,9 +133,9 @@
    The actor works the same way, with $H(s,a) = \sum_i w_{ai}\, x_i(s)$ on the striatal neurons of action $a$.
    Step 6 changes only $H(s_t, a_t)$, so only synapses onto the neurons of the chosen action change:};
 \node[display, text=purpS] (Ceq3) at ($(Wm |- Cwhen.south)+(0,-12pt)$)
-  {$\Delta w_{ai} = \alpha_\pi\, \delta_t\, x_i(s_t)\, [a = a_t]$};
+  {$\Delta w_{ai} = \alpha_\pi\, \delta_t\, x_i(s_t)\, \mathds{1}[a = a_t]$};
 \node[para, text=grayD] (Cend) at ($(Cwhen.south west |- Ceq3.south)+(0,-12pt)$)
-  {Three factors: presynaptic $x_i$ $\times$ postsynaptic $[a = a_t]$ (1 for the chosen action's neurons, else 0) $\times$ dopamine $\delta_t$.};
+  {Three factors: presynaptic $x_i$ $\times$ postsynaptic $\mathds{1}[a = a_t]$ $\times$ dopamine $\delta_t$.};
 
 % ================= panel frames, full width =================
 \coordinate (XL) at (-14pt,0);
