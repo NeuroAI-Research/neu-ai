@@ -3,6 +3,7 @@
 - [The recipe for intelligence in natural and artificial systems](https://www.cell.com/action/showPdf?pii=S0896-6273%2826%2900643-4)
     - DeepMind: `Christopher Summerfield`, `Kimberly Stachenfeld`
 
+<!--
 ## Ricky's Critiques
 
 > The entire `Large-scale generative models as theories of the brain` section, especially: 
@@ -22,12 +23,15 @@
     - Technically, we can do this: during the day, we let LLM talk with users and save those conversations. At night, just like humans' sleeping, we pause the LLM app and use new data collected in the day to train (aka fine-tune) the model
     - Choosing not to do something doesn't mean it's "unsolved".
 
-> They learn from dynamic interactions with the environment rather than passive exposure to content, making them creative in their dealings with an open-ended world.
+> We argue that the shortcomings of current AI systems can be traced to their lack of the core functionalities that sustains natural intelligence. 
+> They (natural intelligence) learn from dynamic interactions with the environment rather than passive exposure to content, making them creative in their dealings with an open-ended world.
+> Future AI systems may need to incorporate these cognitive and computational principles to fulfill their promise of becoming generally intelligent assistants. 
 
 - Ricky's critique:
     - The remarkable abilities from today's AI are exactly a result of RL training, which lets them interact with the environment 
 
 ---
+-->
 
 ## SUMMARY
 
