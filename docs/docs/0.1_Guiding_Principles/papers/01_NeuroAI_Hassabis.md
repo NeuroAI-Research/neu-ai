@@ -1,6 +1,7 @@
 # 1 2017 NeuroAI Hassabis
 
 - [Neuroscience-Inspired Artificial Intelligence](https://www.cell.com/action/showPdf?pii=S0896-6273%2817%2930509-3)
+    - DeepMind: `Demis Hassabis`, `Dharshan Kumaran`, `Christopher Summerfield`, `Matthew Botvinick`
 
 - The fields of neuroscience and artificial intelligence (AI) have a long and intertwined history. 
     - In more recent times, however, communication and collaboration between the two fields has become less commonplace.
